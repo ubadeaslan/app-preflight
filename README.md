@@ -67,6 +67,7 @@ preflight init                    # scaffold preflight.toml + a CI workflow
 preflight check [PATH]            # scan a project (defaults to current dir)
 preflight check . --format json   # machine-readable output for CI/tools
 preflight check . --format sarif  # SARIF for GitHub code scanning
+preflight check . --format markdown  # for a PR comment / CI job summary
 preflight check . --fail-on warning
 preflight rules                   # list every check preflight knows about
 
@@ -255,6 +256,13 @@ jobs:
       - uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: preflight.sarif
+```
+
+To add a human-readable summary to the CI run, append the Markdown report to the
+job summary:
+
+```yaml
+      - run: preflight check . --format markdown >> "$GITHUB_STEP_SUMMARY"
 ```
 
 ## Architecture

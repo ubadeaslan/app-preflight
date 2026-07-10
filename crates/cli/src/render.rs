@@ -22,6 +22,46 @@ fn relative_uri(file: &Path, root: &Path) -> String {
         .replace('\\', "/")
 }
 
+/// Render the report as Markdown, suitable for a GitHub job summary or PR comment.
+pub fn markdown(report: &Report, root: &Path) -> String {
+    let mut out = String::from("## app-preflight\n\n");
+    if report.is_empty() {
+        out.push_str("✅ No issues found. Cleared for submission.\n");
+        return out;
+    }
+
+    let s = &report.summary;
+    out.push_str(&format!(
+        "**{} error(s) · {} warning(s) · {} info**\n",
+        s.errors, s.warnings, s.infos
+    ));
+
+    for (label, sev) in [
+        ("Errors", Severity::Error),
+        ("Warnings", Severity::Warning),
+        ("Info", Severity::Info),
+    ] {
+        let group: Vec<&Finding> = report
+            .findings
+            .iter()
+            .filter(|f| f.severity == sev)
+            .collect();
+        if group.is_empty() {
+            continue;
+        }
+        out.push_str(&format!("\n### {label}\n\n"));
+        for f in group {
+            let loc = f
+                .location
+                .as_ref()
+                .map(|l| format!(" — `{}`", relative_uri(&l.file, root)))
+                .unwrap_or_default();
+            out.push_str(&format!("- **{}** {}{}\n", f.check_id, f.message, loc));
+        }
+    }
+    out
+}
+
 /// Render the report as SARIF 2.1.0 for GitHub code scanning and other tools.
 pub fn sarif(report: &Report, root: &Path) -> String {
     let mut metas: Vec<CheckMeta> = preflight_ios::all_check_meta();
