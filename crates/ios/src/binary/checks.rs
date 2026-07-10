@@ -14,6 +14,8 @@ pub fn registry() -> Vec<Box<dyn BinaryCheck>> {
         Box::new(PrivateFramework),
         Box::new(DebugEndpoints),
         Box::new(EmbeddedPrivacyManifest),
+        Box::new(IdfaWithoutTracking),
+        Box::new(AtsArbitraryLoads),
     ]
 }
 
@@ -159,5 +161,81 @@ impl BinaryCheck for EmbeddedPrivacyManifest {
              required-reason APIs or common SDKs need one.",
         )
         .remediation("Add a privacy manifest to the app target and rebuild.")]
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-BIN-005 — IDFA access without an App Tracking Transparency prompt.
+struct IdfaWithoutTracking;
+
+const IDFA_META: CheckMeta = CheckMeta {
+    id: "IOS-BIN-005",
+    title: "IDFA used without an App Tracking Transparency string",
+    platform: Platform::Ios,
+    category: Category::Privacy,
+    default_severity: Severity::Error,
+    confidence: Confidence::Medium,
+    guideline: Some("5.1.2"),
+    docs_url: Some("https://developer.apple.com/documentation/apptrackingtransparency"),
+};
+
+impl BinaryCheck for IdfaWithoutTracking {
+    fn meta(&self) -> CheckMeta {
+        IDFA_META
+    }
+    fn run(&self, snap: &BinarySnapshot) -> Vec<Finding> {
+        if !snap.uses_idfa || snap.has_tracking_usage_description {
+            return Vec::new();
+        }
+        vec![Finding::from_meta(
+            &IDFA_META,
+            "The binary references the advertising identifier (IDFA) but the bundle has no \
+             `NSUserTrackingUsageDescription`. Apps that access the IDFA must request \
+             permission via App Tracking Transparency.",
+        )
+        .remediation(
+            "Add NSUserTrackingUsageDescription and call \
+             ATTrackingManager.requestTrackingAuthorization before accessing the IDFA — or \
+             remove the SDK that reads it.",
+        )]
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-BIN-006 — App Transport Security fully disabled.
+struct AtsArbitraryLoads;
+
+const ATS_META: CheckMeta = CheckMeta {
+    id: "IOS-BIN-006",
+    title: "App Transport Security disabled (NSAllowsArbitraryLoads)",
+    platform: Platform::Ios,
+    category: Category::Configuration,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: Some("2.5.1"),
+    docs_url: Some(
+        "https://developer.apple.com/documentation/bundleresources/information_property_list/nsapptransportsecurity",
+    ),
+};
+
+impl BinaryCheck for AtsArbitraryLoads {
+    fn meta(&self) -> CheckMeta {
+        ATS_META
+    }
+    fn run(&self, snap: &BinarySnapshot) -> Vec<Finding> {
+        if !snap.ats_allows_arbitrary_loads {
+            return Vec::new();
+        }
+        vec![Finding::from_meta(
+            &ATS_META,
+            "The bundle sets `NSAllowsArbitraryLoads = true`, disabling App Transport \
+             Security globally. Apple requires justification for this and may reject it.",
+        )
+        .remediation(
+            "Remove the global exception and scope any needed HTTP exceptions to specific \
+             domains under NSExceptionDomains.",
+        )]
     }
 }

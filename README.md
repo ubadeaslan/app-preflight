@@ -84,6 +84,8 @@ preflight rules                 # list every check preflight knows about
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |
 | `IOS-BIN-004`     | iOS | No `PrivacyInfo.xcprivacy` inside the built `.app` |
+| `IOS-BIN-005`     | iOS | IDFA used without an App Tracking Transparency string (5.1.2) |
+| `IOS-BIN-006`     | iOS | App Transport Security disabled (`NSAllowsArbitraryLoads`) |
 | `ANDROID-CONFIG-001` | Android | `android:debuggable="true"` in the manifest |
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |

@@ -24,6 +24,12 @@ pub struct BinarySnapshot {
     pub private_frameworks: Vec<String>,
     /// Debug / local network endpoints found embedded in the binary.
     pub debug_endpoints: Vec<String>,
+    /// The binary references the advertising identifier (IDFA) APIs.
+    pub uses_idfa: bool,
+    /// `NSUserTrackingUsageDescription` is present in the bundle Info.plist.
+    pub has_tracking_usage_description: bool,
+    /// App Transport Security is fully disabled (`NSAllowsArbitraryLoads`).
+    pub ats_allows_arbitrary_loads: bool,
 }
 
 /// Analyze an `.ipa` at `path`.

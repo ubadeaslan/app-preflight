@@ -15,6 +15,17 @@ fn info_plist(exec: &str) -> String {
     )
 }
 
+/// Info.plist that also disables App Transport Security globally.
+fn info_plist_ats_disabled(exec: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>{exec}</string>
+<key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+</dict></plist>"#
+    )
+}
+
 /// Write a fake .ipa to a temp path with the given (name, bytes) entries.
 fn write_ipa(tag: &str, entries: &[(&str, &[u8])]) -> PathBuf {
     let path = std::env::temp_dir().join(format!("preflight_{tag}_{}.ipa", std::process::id()));
@@ -32,11 +43,14 @@ fn write_ipa(tag: &str, entries: &[(&str, &[u8])]) -> PathBuf {
 #[test]
 fn flags_uiwebview_private_framework_endpoints_and_missing_manifest() {
     let exec = b"padding UIWebView more /System/Library/PrivateFrameworks/Foo.framework/Foo \
-                 and http://localhost:8080 trailing";
+                 and http://localhost:8080 and advertisingIdentifier trailing";
     let path = write_ipa(
         "broken",
         &[
-            ("Payload/Demo.app/Info.plist", info_plist("Demo").as_bytes()),
+            (
+                "Payload/Demo.app/Info.plist",
+                info_plist_ats_disabled("Demo").as_bytes(),
+            ),
             ("Payload/Demo.app/Demo", exec),
         ],
     );
@@ -45,16 +59,16 @@ fn flags_uiwebview_private_framework_endpoints_and_missing_manifest() {
     let ids: Vec<&str> = findings.iter().map(|f| f.check_id.as_str()).collect();
     let _ = std::fs::remove_file(&path);
 
-    assert!(ids.contains(&"IOS-BIN-001"), "UIWebView not flagged");
-    assert!(
-        ids.contains(&"IOS-BIN-002"),
-        "private framework not flagged"
-    );
-    assert!(ids.contains(&"IOS-BIN-003"), "debug endpoint not flagged");
-    assert!(
-        ids.contains(&"IOS-BIN-004"),
-        "missing privacy manifest not flagged"
-    );
+    for expected in [
+        "IOS-BIN-001", // UIWebView
+        "IOS-BIN-002", // private framework
+        "IOS-BIN-003", // debug endpoint
+        "IOS-BIN-004", // missing privacy manifest
+        "IOS-BIN-005", // IDFA without ATT
+        "IOS-BIN-006", // ATS disabled
+    ] {
+        assert!(ids.contains(&expected), "{expected} not flagged");
+    }
 }
 
 #[test]
@@ -90,7 +104,24 @@ fn checks_run_on_a_snapshot() {
         uses_uiwebview: true,
         private_frameworks: vec!["/System/Library/PrivateFrameworks/X.framework/X".into()],
         debug_endpoints: vec!["http://localhost".into()],
+        uses_idfa: true,
+        has_tracking_usage_description: false,
+        ats_allows_arbitrary_loads: true,
+    };
+    // All six iOS binary checks should fire.
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert_eq!(ids.len(), 6);
+}
+
+#[test]
+fn idfa_with_tracking_description_is_not_flagged() {
+    let snap = BinarySnapshot {
+        app_name: "Demo".into(),
+        has_privacy_manifest: true,
+        uses_idfa: true,
+        has_tracking_usage_description: true,
+        ..Default::default()
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
-    assert_eq!(ids.len(), 4);
+    assert!(!ids.contains(&"IOS-BIN-005".to_string()));
 }

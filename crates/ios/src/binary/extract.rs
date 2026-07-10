@@ -43,12 +43,28 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
         ..Default::default()
     };
 
-    // The executable name comes from Info.plist's CFBundleExecutable, falling
-    // back to the app bundle's base name.
-    let exec_name = read_entry(&mut archive, &format!("{app_dir}Info.plist"))
+    // Read the bundle Info.plist once for the executable name and privacy keys.
+    let info = read_entry(&mut archive, &format!("{app_dir}Info.plist"))
         .ok()
         .and_then(|bytes| plist::Value::from_reader(Cursor::new(bytes)).ok())
-        .and_then(|v| v.into_dictionary())
+        .and_then(|v| v.into_dictionary());
+
+    if let Some(dict) = &info {
+        snap.has_tracking_usage_description = dict
+            .get("NSUserTrackingUsageDescription")
+            .and_then(|v| v.as_string())
+            .map(|s| !s.trim().is_empty())
+            .unwrap_or(false);
+        snap.ats_allows_arbitrary_loads = dict
+            .get("NSAppTransportSecurity")
+            .and_then(|v| v.as_dictionary())
+            .and_then(|ats| ats.get("NSAllowsArbitraryLoads"))
+            .and_then(|v| v.as_boolean())
+            .unwrap_or(false);
+    }
+
+    let exec_name = info
+        .as_ref()
         .and_then(|d| d.get("CFBundleExecutable")?.as_string().map(str::to_string))
         .unwrap_or_else(|| snap.app_name.clone());
 
@@ -61,6 +77,8 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
 
 fn scan_executable(bytes: &[u8], snap: &mut BinarySnapshot) {
     snap.uses_uiwebview = contains(bytes, b"UIWebView");
+    snap.uses_idfa =
+        contains(bytes, b"advertisingIdentifier") || contains(bytes, b"ASIdentifierManager");
 
     // Exact linked private frameworks, when the Mach-O parses as a thin binary.
     if let Ok(Mach::Binary(macho)) = Mach::parse(bytes) {
