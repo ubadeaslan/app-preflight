@@ -80,6 +80,10 @@ preflight rules                 # list every check preflight knows about
 | `IOS-META-004`    | iOS | Empty / placeholder app description (2.3.7) |
 | `IOS-META-005`    | iOS | No iPhone screenshots uploaded (2.3.3) |
 | `IOS-META-006`    | iOS | Keyword list over the 100-character limit |
+| `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
+| `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
+| `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |
+| `IOS-BIN-004`     | iOS | No `PrivacyInfo.xcprivacy` inside the built `.app` |
 | `ANDROID-CONFIG-001` | Android | `android:debuggable="true"` in the manifest |
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
@@ -90,12 +94,26 @@ preflight rules                 # list every check preflight knows about
 | `ANDROID-META-004`   | Android | Missing feature graphic |
 | `ANDROID-META-005`   | Android | Missing high-res app icon on the listing |
 | `ANDROID-META-006`   | Android | No contact details on the store listing |
+| `ANDROID-BIN-001`    | Android | APK ships 32-bit native libs but no 64-bit ABI |
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);
-everything else is offline. Run `preflight rules` for the live list. The roadmap
-adds **compiled-binary** checks (private-API usage and embedded strings inside an
-`.ipa` / `.apk`).
+everything else is offline. Run `preflight rules` for the live list.
+
+## Scanning a compiled `.ipa` / `.apk`
+
+Point `check` at a built artifact instead of a directory to inspect the compiled
+binary — things you can only see post-build:
+
+```sh
+preflight check ./build/MyApp.ipa
+preflight check ./app/release/app-release.apk
+```
+
+For iOS this unzips the IPA and inspects the Mach-O for `UIWebView` usage,
+private-framework linkage, embedded debug endpoints, and a bundled privacy
+manifest. For Android it checks the APK's native ABIs for the Google Play 64-bit
+requirement. (DEX/AXML decoding is a future addition.)
 
 ## App Store Connect metadata scanning
 

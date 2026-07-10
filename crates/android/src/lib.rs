@@ -3,6 +3,7 @@
 //! Mirrors the iOS crate: [`analyze`] loads an [`AndroidProject`] and runs every
 //! [`AndroidCheck`] in [`checks::registry`].
 
+pub mod binary;
 pub mod checks;
 pub mod metadata;
 mod project;
@@ -37,7 +38,13 @@ pub fn analyze(root: &Path, config: &Config) -> Option<Vec<Finding>> {
 pub fn all_check_meta() -> Vec<CheckMeta> {
     let mut metas: Vec<CheckMeta> = checks::registry().iter().map(|c| c.meta()).collect();
     metas.extend(metadata::all_check_meta());
+    metas.extend(binary::all_check_meta());
     metas
+}
+
+/// Analyze a compiled `.apk` file.
+pub fn analyze_binary(path: &Path) -> Result<Vec<Finding>, binary::BinaryError> {
+    binary::analyze(path)
 }
 
 /// Run the Google Play metadata scan, if it is configured.

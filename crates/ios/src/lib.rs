@@ -5,6 +5,7 @@
 //! means writing one file under `src/checks/` and adding it to the registry —
 //! nothing else.
 
+pub mod binary;
 pub mod checks;
 pub mod metadata;
 mod project;
@@ -41,7 +42,13 @@ pub fn analyze(root: &Path, config: &Config) -> Option<Vec<Finding>> {
 pub fn all_check_meta() -> Vec<CheckMeta> {
     let mut metas: Vec<CheckMeta> = checks::registry().iter().map(|c| c.meta()).collect();
     metas.extend(metadata::all_check_meta());
+    metas.extend(binary::all_check_meta());
     metas
+}
+
+/// Analyze a compiled `.ipa` file.
+pub fn analyze_binary(path: &Path) -> Result<Vec<Finding>, binary::BinaryError> {
+    binary::analyze(path)
 }
 
 pub use preflight_core::MetadataScan;

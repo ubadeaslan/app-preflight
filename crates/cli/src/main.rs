@@ -29,7 +29,8 @@ enum Command {
 
 #[derive(Args)]
 struct CheckArgs {
-    /// Path to the project root (defaults to the current directory).
+    /// Project directory, or a compiled .ipa / .apk file (defaults to the
+    /// current directory).
     #[arg(default_value = ".")]
     path: PathBuf,
 
@@ -150,6 +151,46 @@ fn handle_scan(
     }
 }
 
+/// Analyze a single compiled artifact (`.ipa` or `.apk`) instead of a project
+/// directory.
+fn run_binary_check(path: &std::path::Path, args: &CheckArgs) -> Result<ExitCode> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+
+    let findings = match ext.as_str() {
+        "ipa" => preflight_ios::analyze_binary(path)?,
+        "apk" => preflight_android::analyze_binary(path)?,
+        _ => {
+            eprintln!(
+                "Unsupported file '{}'. Pass a project directory, or an .ipa / .apk file.",
+                path.display()
+            );
+            return Ok(ExitCode::from(2));
+        }
+    };
+
+    let mut config =
+        Config::load_from_dir(path.parent().unwrap_or(path)).map_err(anyhow::Error::msg)?;
+    if let Some(level) = args.fail_on {
+        config.fail_on = Some(level.into());
+    }
+
+    let report = Report::build(findings, &config);
+    let fail = report.should_fail(&config);
+    match args.format {
+        Format::Pretty => render::print_pretty(&report, path),
+        Format::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+    }
+    Ok(if fail {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    })
+}
+
 /// On Windows, `canonicalize` returns a `\\?\C:\...` verbatim path that looks
 /// noisy in reports. Strip the prefix for display and downstream walking.
 fn strip_verbatim(path: PathBuf) -> PathBuf {
@@ -167,6 +208,11 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
             .canonicalize()
             .with_context(|| format!("cannot access path {}", args.path.display()))?,
     );
+
+    // A file input is a compiled artifact (.ipa/.apk); a directory is a project.
+    if root.is_file() {
+        return run_binary_check(&root, &args);
+    }
 
     let mut config = Config::load_from_dir(&root).map_err(anyhow::Error::msg)?;
     if let Some(level) = args.fail_on {

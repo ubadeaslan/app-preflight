@@ -21,6 +21,8 @@ roxmltree = "0.20"
 clap = { version = "4", features = ["derive"] }
 ureq = { version = "2", features = ["json"] }
 jsonwebtoken = "9"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+goblin = "0.8"
 
 preflight-core = { path = "crates/core" }
 preflight-ios = { path = "crates/ios" }
