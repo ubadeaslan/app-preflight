@@ -220,6 +220,20 @@ impl MetadataCheck for IphoneScreenshots {
         SCREENSHOTS_META
     }
     fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        // No screenshots of any kind is a hard blocker. Screenshots present but
+        // none for iPhone is only a problem if the app supports iPhone — which we
+        // can't tell from this snapshot — so flag it as a softer warning (an
+        // iPad-only app legitimately ships only iPad screenshots).
+        if snap.screenshot_display_types.is_empty() {
+            return vec![Finding::from_meta(
+                &SCREENSHOTS_META,
+                "No screenshots were found on the current App Store version. At least one \
+                 screenshot for a supported device size is required to submit.",
+            )
+            .remediation(
+                "Upload screenshots for your supported device sizes in App Store Connect.",
+            )];
+        }
         let has_iphone = snap
             .screenshot_display_types
             .iter()
@@ -229,11 +243,13 @@ impl MetadataCheck for IphoneScreenshots {
         }
         vec![Finding::from_meta(
             &SCREENSHOTS_META,
-            "No iPhone screenshots were found on the current App Store version. \
-             At least one iPhone display size is required to submit.",
+            "No iPhone screenshots were found (only non-iPhone sizes). If the app supports \
+             iPhone, at least one iPhone display size is required.",
         )
+        .severity(Severity::Warning)
         .remediation(
-            "Upload screenshots for a current iPhone display size (e.g. 6.7\") in App Store Connect.",
+            "Upload iPhone screenshots (e.g. 6.7\") if the app supports iPhone; ignore this if it \
+             is iPad-only.",
         )]
     }
 }

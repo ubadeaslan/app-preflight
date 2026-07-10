@@ -60,10 +60,14 @@ pub fn fetch(client: &AscClient, bundle_id: &str) -> Result<MetadataSnapshot, Me
         ..Default::default()
     };
 
-    snap.privacy_policy_url = fetch_privacy_policy(client, app_id).unwrap_or(None);
+    // Propagate fetch errors rather than swallowing them — a failed fetch must
+    // not be reported as "missing" by the checks (that would be a false Error).
+    snap.privacy_policy_url = fetch_privacy_policy(client, app_id)?;
 
-    // Current (most recent) App Store version.
-    let versions = client.get(&format!("/v1/apps/{app_id}/appStoreVersions?limit=1"))?;
+    // Current (most recent) iOS App Store version.
+    let versions = client.get(&format!(
+        "/v1/apps/{app_id}/appStoreVersions?filter[platform]=IOS&limit=1"
+    ))?;
     let Some(version) = versions["data"].as_array().and_then(|a| a.first()) else {
         return Ok(snap); // App exists but has no version yet.
     };
@@ -74,7 +78,7 @@ pub fn fetch(client: &AscClient, bundle_id: &str) -> Result<MetadataSnapshot, Me
     let (localizations, localization_ids) = fetch_localizations(client, &version_id)?;
     snap.localizations = localizations;
 
-    snap.screenshot_display_types = fetch_screenshot_types(client, &localization_ids);
+    snap.screenshot_display_types = fetch_screenshot_types(client, &localization_ids)?;
     snap.review_detail = fetch_review_detail(client, &version_id).unwrap_or(None);
 
     Ok(snap)
@@ -122,14 +126,16 @@ fn fetch_localizations(
     Ok((localizations, ids))
 }
 
-fn fetch_screenshot_types(client: &AscClient, localization_ids: &[String]) -> Vec<String> {
+fn fetch_screenshot_types(
+    client: &AscClient,
+    localization_ids: &[String],
+) -> Result<Vec<String>, MetadataError> {
     let mut types = Vec::new();
     for id in localization_ids {
-        let Ok(resp) = client.get(&format!(
+        // Propagate errors: a failed fetch must not look like "no screenshots".
+        let resp = client.get(&format!(
             "/v1/appStoreVersionLocalizations/{id}/appScreenshotSets"
-        )) else {
-            continue;
-        };
+        ))?;
         if let Some(items) = resp["data"].as_array() {
             for item in items {
                 if let Some(t) = str_attr(item, "screenshotDisplayType") {
@@ -140,7 +146,7 @@ fn fetch_screenshot_types(client: &AscClient, localization_ids: &[String]) -> Ve
             }
         }
     }
-    types
+    Ok(types)
 }
 
 fn fetch_review_detail(

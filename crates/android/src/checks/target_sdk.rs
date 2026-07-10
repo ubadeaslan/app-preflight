@@ -60,24 +60,32 @@ impl AndroidCheck for TargetSdkCheck {
     }
 }
 
-/// Extract `targetSdk` / `targetSdkVersion` from Gradle text (Groovy or KTS).
-fn parse_target_sdk(gradle: &str) -> Option<u32> {
-    for line in gradle.lines() {
-        let line = line.trim();
-        if !line.contains("targetSdk") {
+/// Extract `targetSdk` / `targetSdkVersion` from Gradle text (Groovy or KTS),
+/// ignoring comments so a `// TODO bump to 36` line can't win.
+pub(crate) fn parse_target_sdk(gradle: &str) -> Option<u32> {
+    for raw in gradle.lines() {
+        // Strip line comments (`//` and `#`).
+        let line = raw
+            .split("//")
+            .next()
+            .unwrap_or("")
+            .split('#')
+            .next()
+            .unwrap_or("")
+            .trim();
+        let Some(idx) = line.find("targetSdk") else {
             continue;
-        }
-        // Grab the first integer after the keyword.
-        if let Some(idx) = line.find("targetSdk") {
-            let rest = &line[idx..];
-            let digits: String = rest
-                .chars()
-                .skip_while(|c| !c.is_ascii_digit())
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
-            if let Ok(v) = digits.parse::<u32>() {
-                return Some(v);
-            }
+        };
+        // Skip `targetSdkPreview` and similar non-numeric variants.
+        let after_kw = &line[idx + "targetSdk".len()..];
+        let after_kw = after_kw.strip_prefix("Version").unwrap_or(after_kw);
+        let digits: String = after_kw
+            .chars()
+            .skip_while(|c| !c.is_ascii_digit())
+            .take_while(|c| c.is_ascii_digit())
+            .collect();
+        if let Ok(v) = digits.parse::<u32>() {
+            return Some(v);
         }
     }
     None

@@ -65,20 +65,20 @@ fn fetch_with_edit(
         ..Default::default()
     };
 
-    // Contact details / default language.
-    if let Ok(details) = client.get(&format!("{base}/details")) {
-        snap.default_language = str_field(&details, "defaultLanguage");
-        snap.contact_email = str_field(&details, "contactEmail");
-        snap.contact_website = str_field(&details, "contactWebsite");
-        snap.contact_phone = str_field(&details, "contactPhone");
-    }
+    // Contact details / default language. Propagate errors — a failed fetch must
+    // not be reported as "no contact details" (a false finding).
+    let details = client.get(&format!("{base}/details"))?;
+    snap.default_language = str_field(&details, "defaultLanguage");
+    snap.contact_email = str_field(&details, "contactEmail");
+    snap.contact_website = str_field(&details, "contactWebsite");
+    snap.contact_phone = str_field(&details, "contactPhone");
 
     // Per-language listings.
     let listings = client.get(&format!("{base}/listings"))?;
     if let Some(items) = listings["listings"].as_array() {
         for item in items {
             let language = str_field(item, "language").unwrap_or_default();
-            let (phones, feature, icon) = fetch_image_presence(client, &base, &language);
+            let (phones, feature, icon) = fetch_image_presence(client, &base, &language)?;
             snap.listings.push(PlayListing {
                 title: str_field(item, "title"),
                 short_description: str_field(item, "shortDescription"),
@@ -95,19 +95,21 @@ fn fetch_with_edit(
 }
 
 /// Count phone screenshots and detect feature graphic / icon for a language.
-fn fetch_image_presence(client: &PlayClient, base: &str, language: &str) -> (usize, bool, bool) {
-    let count = |image_type: &str| -> usize {
-        client
-            .get(&format!("{base}/listings/{language}/{image_type}"))
-            .ok()
-            .and_then(|v| v["images"].as_array().map(|a| a.len()))
-            .unwrap_or(0)
+/// Propagates errors so a failed image fetch is never mistaken for "no asset".
+fn fetch_image_presence(
+    client: &PlayClient,
+    base: &str,
+    language: &str,
+) -> Result<(usize, bool, bool), MetadataError> {
+    let count = |image_type: &str| -> Result<usize, MetadataError> {
+        let resp = client.get(&format!("{base}/listings/{language}/{image_type}"))?;
+        Ok(resp["images"].as_array().map(|a| a.len()).unwrap_or(0))
     };
-    (
-        count("phoneScreenshots"),
-        count("featureGraphic") > 0,
-        count("icon") > 0,
-    )
+    Ok((
+        count("phoneScreenshots")?,
+        count("featureGraphic")? > 0,
+        count("icon")? > 0,
+    ))
 }
 
 /// Read a top-level string field, treating empty strings as absent.

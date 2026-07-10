@@ -19,7 +19,10 @@ const META: CheckMeta = CheckMeta {
     platform: Platform::Android,
     category: Category::Configuration,
     default_severity: Severity::Warning,
-    confidence: Confidence::Medium,
+    // Heuristic: we can't tell which <service> elements are actually foreground
+    // services (bound services, FCM, InputMethodService, etc. must NOT set a
+    // type), so this is advisory.
+    confidence: Confidence::Low,
     guideline: Some("Android 14: Foreground service types"),
     docs_url: Some("https://developer.android.com/about/versions/14/changes/fgs-types-required"),
 };
@@ -33,6 +36,14 @@ impl AndroidCheck for ForegroundServiceTypeCheck {
         let Some(doc) = project.manifest_doc() else {
             return Vec::new();
         };
+
+        // The requirement only applies at targetSdk 34+. If we can read the
+        // target and it's below 34, don't flag.
+        if let Some(target) = super::target_sdk::parse_target_sdk(&project.gradle_text) {
+            if target < 34 {
+                return Vec::new();
+            }
+        }
 
         let declares_fgs = doc
             .descendants()
@@ -52,8 +63,8 @@ impl AndroidCheck for ForegroundServiceTypeCheck {
         let mut finding = Finding::from_meta(
             &META,
             "The app declares FOREGROUND_SERVICE but a <service> has no \
-             android:foregroundServiceType. Android 14 (targetSdk 34+) requires a type on every \
-             foreground service.",
+             android:foregroundServiceType. Android 14 (targetSdk 34+) requires a type on \
+             foreground services (bound/FCM/IME services don't need one — verify which applies).",
         )
         .remediation(
             "Add android:foregroundServiceType to each foreground service and the matching \
