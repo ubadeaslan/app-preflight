@@ -22,7 +22,9 @@ use std::path::Path;
 use zip::ZipArchive;
 
 /// Play's minimum target API for new uploads (kept in sync with the source check).
-const MIN_TARGET_SDK: u32 = 34;
+/// API 35 (Android 15) has been the floor since 2025-08-31; bump to 36 after the
+/// 2026 deadline.
+const MIN_TARGET_SDK: u32 = 35;
 
 /// A check-ready view of a compiled APK.
 #[derive(Debug, Clone, Default)]

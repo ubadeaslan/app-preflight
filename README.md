@@ -271,7 +271,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install --git https://github.com/ubadeaslan/app-preflight preflight-cli
       - run: preflight check . --format sarif > preflight.sarif
-      - uses: github/codeql-action/upload-sarif@v3
+      - if: always() # still upload when the scan exits non-zero on findings
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: preflight.sarif
 ```

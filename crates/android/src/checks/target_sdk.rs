@@ -11,8 +11,9 @@ use preflight_core::{
 
 pub struct TargetSdkCheck;
 
-/// Play's minimum target API for new uploads. Bump this as Google raises it.
-const MIN_TARGET_SDK: u32 = 34; // Android 14
+/// Play's minimum target API for new uploads. Bump this as Google raises it
+/// (API 35 / Android 15 since 2025-08-31; raise to 36 after the 2026 deadline).
+const MIN_TARGET_SDK: u32 = 35;
 
 const META: CheckMeta = CheckMeta {
     id: "ANDROID-CONFIG-002",

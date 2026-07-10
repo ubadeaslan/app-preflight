@@ -65,8 +65,8 @@ impl AndroidCheck for SensitivePermissionsCheck {
             };
             let (severity, note) = if RESTRICTED.contains(&name) {
                 (
-                    Severity::Warning,
-                    "This is a restricted permission — Play only allows it for a narrow set of app types and requires a Permissions Declaration.",
+                    Severity::Error,
+                    "This is a restricted permission — Play only allows it for a narrow set of app types and requires a Permissions Declaration; most apps are rejected.",
                 )
             } else if SENSITIVE.contains(&name) {
                 (

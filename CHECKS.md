@@ -60,7 +60,7 @@ app-preflight ships 54 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-META-002` | warning | metadata | Play: Store listing | Title or short description missing / over limit |
 | `ANDROID-META-003` | error | metadata | Play: Store listing | Fewer than two phone screenshots |
 | `ANDROID-META-004` | error | metadata | Play: Store listing | Missing feature graphic |
-| `ANDROID-META-005` | warning | metadata | Play: Store listing | Missing high-res app icon on listing |
+| `ANDROID-META-005` | error | metadata | Play: Store listing | Missing high-res app icon on listing |
 | `ANDROID-META-006` | warning | metadata | Play: Store listing | No contact details on the store listing |
 | `ANDROID-PRIVACY-001` | warning | privacy | Play: Permissions and APIs that Access Sensitive Info | Sensitive permission requires Play policy declaration |
 | `ANDROID-PRIVACY-002` | warning | privacy | Play: Permissions declaration | Special permission requiring a Play declaration |

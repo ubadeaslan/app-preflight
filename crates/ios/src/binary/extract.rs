@@ -83,13 +83,16 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
 /// A `.mobileprovision` is a CMS-signed blob wrapping an XML plist. Slice out the
 /// plist by its `<?xml ... </plist>` markers and read the fields we care about.
 fn parse_provisioning(bytes: &[u8], snap: &mut BinarySnapshot) {
-    let (Some(start), Some(end)) = (
-        memchr::memmem::find(bytes, b"<?xml"),
-        memchr::memmem::find(bytes, b"</plist>"),
-    ) else {
+    let Some(start) = memchr::memmem::find(bytes, b"<?xml") else {
         return;
     };
-    let xml = &bytes[start..(end + b"</plist>".len()).min(bytes.len())];
+    // Search for the closing tag only after the opening one, so a stray
+    // `</plist>` earlier in the CMS wrapper can't produce a reversed range.
+    let Some(rel_end) = memchr::memmem::find(&bytes[start..], b"</plist>") else {
+        return;
+    };
+    let end = start + rel_end + b"</plist>".len();
+    let xml = &bytes[start..end.min(bytes.len())];
     let Some(dict) = plist::Value::from_reader(Cursor::new(xml))
         .ok()
         .and_then(|v| v.into_dictionary())
@@ -115,15 +118,19 @@ fn scan_executable(bytes: &[u8], snap: &mut BinarySnapshot) {
         contains(bytes, b"advertisingIdentifier") || contains(bytes, b"ASIdentifierManager");
 
     // Exact linked private frameworks, when the Mach-O parses as a thin binary.
+    let mut parsed_thin = false;
     if let Ok(Mach::Binary(macho)) = Mach::parse(bytes) {
+        parsed_thin = true;
         for lib in &macho.libs {
             if lib.contains("/PrivateFrameworks/") {
                 snap.private_frameworks.push((*lib).to_string());
             }
         }
     }
-    // Fallback signal that also covers fat/unparseable binaries.
-    if snap.private_frameworks.is_empty() && contains(bytes, PRIVATE_FRAMEWORKS_PATH.as_bytes()) {
+    // String fallback for fat/unparseable binaries only. When goblin parsed the
+    // thin binary and enumerated its libs, trust that — the literal path may just
+    // be a logging/diagnostic constant, not actual linkage.
+    if !parsed_thin && contains(bytes, PRIVATE_FRAMEWORKS_PATH.as_bytes()) {
         snap.private_frameworks
             .push("(private framework reference in binary)".to_string());
     }

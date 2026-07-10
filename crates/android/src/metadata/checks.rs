@@ -230,8 +230,10 @@ const ICON_META: CheckMeta = CheckMeta {
     title: "Missing high-res app icon on listing",
     platform: Platform::Android,
     category: Category::Metadata,
-    default_severity: Severity::Warning,
-    confidence: Confidence::Medium,
+    // A 512x512 hi-res icon is a mandatory publish asset, like the feature
+    // graphic (ANDROID-META-004) and screenshots (ANDROID-META-003).
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
     guideline: Some("Play: Store listing"),
     docs_url: Some("https://support.google.com/googleplay/android-developer/answer/9866151"),
 };

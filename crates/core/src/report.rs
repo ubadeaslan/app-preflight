@@ -9,6 +9,11 @@ use serde::{Deserialize, Serialize};
 pub struct Report {
     pub findings: Vec<Finding>,
     pub summary: Summary,
+    /// All findings after `disabled_checks` + severity overrides but BEFORE the
+    /// `min_severity` display filter — so the pass/fail gate is independent of
+    /// what's shown. Not serialized.
+    #[serde(skip)]
+    gate_findings: Vec<Finding>,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
@@ -28,6 +33,10 @@ impl Report {
         for f in &mut findings {
             f.severity = config.severity_for(&f.check_id, f.severity);
         }
+
+        // `min_severity` hides low findings from the report, but the pass/fail
+        // gate must still consider them — keep a pre-filter copy for `should_fail`.
+        let gate_findings = findings.clone();
         if let Some(min) = config.min_severity {
             findings.retain(|f| f.severity >= min);
         }
@@ -50,13 +59,19 @@ impl Report {
             }
         }
 
-        Report { findings, summary }
+        Report {
+            findings,
+            summary,
+            gate_findings,
+        }
     }
 
     /// True when any finding meets or exceeds the configured fail threshold.
+    /// Evaluated against the pre-`min_severity` set so hiding low findings never
+    /// changes the exit code.
     pub fn should_fail(&self, config: &Config) -> bool {
         let threshold = config.fail_threshold();
-        self.findings.iter().any(|f| f.severity >= threshold)
+        self.gate_findings.iter().any(|f| f.severity >= threshold)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -151,6 +166,19 @@ mod tests {
         assert_eq!(report.findings[0].severity, Severity::Info);
         assert_eq!(report.summary.errors, 0);
         assert_eq!(report.summary.infos, 1);
+    }
+
+    #[test]
+    fn min_severity_does_not_change_the_fail_gate() {
+        // Hide warnings from display, but still fail on them.
+        let config = Config {
+            min_severity: Some(Severity::Error),
+            fail_on: Some(Severity::Warning),
+            ..Default::default()
+        };
+        let report = Report::build(vec![finding("A", Severity::Warning)], &config);
+        assert!(report.findings.is_empty()); // hidden from display
+        assert!(report.should_fail(&config)); // but still fails the build
     }
 
     #[test]
