@@ -39,14 +39,25 @@ those reasons as checks so you never lose a review cycle to an empty
 
 ## Install
 
-Requires a [Rust toolchain](https://rustup.rs) (1.80+) for now; prebuilt
-binaries are on the roadmap.
+### Prebuilt binaries
+
+Download the archive for your platform from the
+[latest release](https://github.com/ubadeaslan/app-preflight/releases/latest)
+(Linux x86_64, macOS arm64/x86_64, Windows x86_64), extract it, and put
+`preflight` on your `PATH`. Each archive ships with a `.sha256` you can verify.
+
+### From source
+
+Requires a [Rust toolchain](https://rustup.rs) (1.80+):
 
 ```sh
 git clone https://github.com/ubadeaslan/app-preflight
 cd app-preflight
 cargo build --release
 # binary at ./target/release/preflight
+
+# or install straight from git:
+cargo install --git https://github.com/ubadeaslan/app-preflight preflight-cli
 ```
 
 ## Usage
