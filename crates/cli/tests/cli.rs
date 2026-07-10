@@ -36,6 +36,22 @@ fn checks_md_is_in_sync() {
 }
 
 #[test]
+fn explain_prints_a_known_check_and_rejects_unknown() {
+    preflight()
+        .args(["explain", "ios-config-007"]) // case-insensitive
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("IOS-CONFIG-007"))
+        .stdout(predicate::str::contains("Guideline:"));
+
+    preflight()
+        .args(["explain", "NOPE-999"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("Unknown check id"));
+}
+
+#[test]
 fn rules_lists_checks_and_exits_zero() {
     preflight()
         .arg("rules")

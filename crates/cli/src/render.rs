@@ -205,6 +205,35 @@ fn print_finding(f: &Finding) {
     println!();
 }
 
+/// Detailed, human-readable explanation of a single check, or `None` if the id
+/// is unknown. Lookup is case-insensitive.
+pub fn explain(id: &str) -> Option<String> {
+    let mut metas: Vec<CheckMeta> = preflight_ios::all_check_meta();
+    metas.extend(preflight_android::all_check_meta());
+    let m = metas.iter().find(|m| m.id.eq_ignore_ascii_case(id))?;
+
+    let confidence = match m.confidence {
+        preflight_core::Confidence::High => "high",
+        preflight_core::Confidence::Medium => "medium",
+        preflight_core::Confidence::Low => "low",
+    };
+    let mut out = format!("{BOLD}{}{RESET}  {}\n\n", m.id, m.title);
+    out.push_str(&format!("  Platform:   {}\n", m.platform.as_str()));
+    out.push_str(&format!("  Category:   {}\n", m.category.as_str()));
+    out.push_str(&format!(
+        "  Severity:   {} (default)\n",
+        m.default_severity.as_str()
+    ));
+    out.push_str(&format!("  Confidence: {confidence}\n"));
+    if let Some(g) = m.guideline {
+        out.push_str(&format!("  Guideline:  {g}\n"));
+    }
+    if let Some(u) = m.docs_url {
+        out.push_str(&format!("  Docs:       {u}\n"));
+    }
+    Some(out)
+}
+
 /// The full check catalog rendered as Markdown (the source of `CHECKS.md`).
 pub fn rules_markdown() -> String {
     let mut metas: Vec<CheckMeta> = preflight_ios::all_check_meta();

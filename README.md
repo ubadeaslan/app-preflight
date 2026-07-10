@@ -70,6 +70,7 @@ preflight check . --format sarif  # SARIF for GitHub code scanning
 preflight check . --format markdown  # for a PR comment / CI job summary
 preflight check . --fail-on warning
 preflight rules                   # list every check preflight knows about
+preflight explain IOS-CONFIG-007  # show details for one check
 
 # Baseline: adopt on a project that isn't clean yet — fail only on NEW issues.
 preflight check . --write-baseline                       # record current findings

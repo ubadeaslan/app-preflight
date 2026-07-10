@@ -27,8 +27,16 @@ enum Command {
     Check(CheckArgs),
     /// List every check preflight knows about.
     Rules(RulesArgs),
+    /// Explain a single check by id, e.g. `preflight explain IOS-CONFIG-007`.
+    Explain(ExplainArgs),
     /// Scaffold a preflight.toml and a CI workflow.
     Init,
+}
+
+#[derive(Args)]
+struct ExplainArgs {
+    /// The check id (case-insensitive), e.g. `ANDROID-CONFIG-006`.
+    id: String,
 }
 
 #[derive(Args)]
@@ -107,6 +115,19 @@ fn main() -> ExitCode {
             }
             Ok(ExitCode::SUCCESS)
         }
+        Command::Explain(args) => match render::explain(&args.id) {
+            Some(text) => {
+                print!("{text}");
+                Ok(ExitCode::SUCCESS)
+            }
+            None => {
+                eprintln!(
+                    "Unknown check id `{}`. Run `preflight rules` to list them.",
+                    args.id
+                );
+                Ok(ExitCode::from(2))
+            }
+        },
         Command::Init => init::run(),
     };
 
