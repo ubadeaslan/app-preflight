@@ -1,6 +1,6 @@
 # Checks
 
-app-preflight ships 55 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 56 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
 ## iOS (28)
 
@@ -35,7 +35,7 @@ app-preflight ships 55 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 
-## Android (27)
+## Android (28)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -45,6 +45,7 @@ app-preflight ships 55 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-BIN-004` | warning | binary | Play: User Data | Compiled manifest permits cleartext traffic |
 | `ANDROID-BIN-005` | error | binary | Play: Upload requirements | Compiled manifest is marked testOnly |
 | `ANDROID-BIN-006` | error | binary | Play: 16 KB page size | Native libraries not 16 KB page-size aligned |
+| `ANDROID-BIN-007` | warning | privacy | Play: Permissions declaration | Sensitive / restricted permission in the compiled manifest |
 | `ANDROID-CONFIG-001` | error | configuration | Play: Device and Network Abuse | Application is marked debuggable |
 | `ANDROID-CONFIG-002` | error | configuration | Play: Target API level | targetSdk below Google Play minimum |
 | `ANDROID-CONFIG-003` | warning | configuration | Play: User Data | Cleartext network traffic is permitted |

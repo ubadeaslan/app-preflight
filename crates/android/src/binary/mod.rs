@@ -129,6 +129,34 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
                 .remediation("Remove android:testOnly for the release build."),
             );
         }
+        // ANDROID-BIN-007 — sensitive/restricted/special permissions in the
+        // merged manifest (mirrors the source-scan permission checks so an
+        // APK-only scan surfaces them too).
+        for perm in &m.permissions {
+            let name = perm.as_str();
+            let (severity, note) = if crate::permissions::RESTRICTED.contains(&name) {
+                (
+                    Severity::Error,
+                    "restricted permission — Play requires a Permissions Declaration and rejects most apps.".to_string(),
+                )
+            } else if let Some((_, n)) =
+                crate::permissions::SPECIAL.iter().find(|(p, _)| *p == name)
+            {
+                (Severity::Warning, (*n).to_string())
+            } else if crate::permissions::SENSITIVE.contains(&name) {
+                (
+                    Severity::Info,
+                    "disclose in your Play Data Safety form and justify in the listing."
+                        .to_string(),
+                )
+            } else {
+                continue;
+            };
+            findings.push(
+                Finding::from_meta(&PERMISSIONS_META, format!("Declares `{name}`. {note}"))
+                    .severity(severity),
+            );
+        }
     }
 
     // ANDROID-DEX-001 — dynamic code loading.
@@ -220,8 +248,20 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
         RESTRICTED_API_META,
         TEST_ONLY_META,
         SIXTEEN_KB_META,
+        PERMISSIONS_META,
     ]
 }
+
+const PERMISSIONS_META: CheckMeta = CheckMeta {
+    id: "ANDROID-BIN-007",
+    title: "Sensitive / restricted permission in the compiled manifest",
+    platform: Platform::Android,
+    category: Category::Privacy,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: Some("Play: Permissions declaration"),
+    docs_url: Some("https://support.google.com/googleplay/android-developer/answer/9888170"),
+};
 
 const SIXTEEN_KB_META: CheckMeta = CheckMeta {
     id: "ANDROID-BIN-006",

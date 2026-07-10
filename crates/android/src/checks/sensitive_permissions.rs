@@ -22,27 +22,7 @@ const META: CheckMeta = CheckMeta {
     docs_url: Some("https://support.google.com/googleplay/android-developer/answer/9888170"),
 };
 
-/// Permissions that require a specific Play declaration or are highly
-/// restricted. SMS/Call-Log access is only allowed for a narrow set of app
-/// types and is escalated to an error-level warning.
-const RESTRICTED: &[&str] = &[
-    "android.permission.READ_SMS",
-    "android.permission.SEND_SMS",
-    "android.permission.RECEIVE_SMS",
-    "android.permission.READ_CALL_LOG",
-    "android.permission.WRITE_CALL_LOG",
-    "android.permission.PROCESS_OUTGOING_CALLS",
-];
-
-/// Sensitive but commonly legitimate — flagged for the Data Safety form.
-const SENSITIVE: &[&str] = &[
-    "android.permission.ACCESS_FINE_LOCATION",
-    "android.permission.ACCESS_BACKGROUND_LOCATION",
-    "android.permission.CAMERA",
-    "android.permission.RECORD_AUDIO",
-    "android.permission.READ_CONTACTS",
-    "android.permission.QUERY_ALL_PACKAGES",
-];
+use crate::permissions::{RESTRICTED, SENSITIVE};
 
 impl AndroidCheck for SensitivePermissionsCheck {
     fn meta(&self) -> CheckMeta {

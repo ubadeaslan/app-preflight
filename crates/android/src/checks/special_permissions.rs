@@ -22,29 +22,7 @@ const META: CheckMeta = CheckMeta {
     docs_url: Some("https://support.google.com/googleplay/android-developer/answer/12085295"),
 };
 
-/// (permission, why it needs special handling).
-const SPECIAL: &[(&str, &str)] = &[
-    (
-        "android.permission.MANAGE_EXTERNAL_STORAGE",
-        "All files access is only permitted for specific app types and needs a Play declaration.",
-    ),
-    (
-        "android.permission.SYSTEM_ALERT_WINDOW",
-        "Drawing over other apps is restricted and heavily scrutinized by Play.",
-    ),
-    (
-        "android.permission.REQUEST_INSTALL_PACKAGES",
-        "Installing packages requires a Play declaration and justification.",
-    ),
-    (
-        "android.permission.PACKAGE_USAGE_STATS",
-        "Usage-access is a sensitive, special-access permission.",
-    ),
-    (
-        "android.permission.QUERY_ALL_PACKAGES",
-        "Broad package visibility requires a Play declaration for most app types.",
-    ),
-];
+use crate::permissions::SPECIAL;
 
 impl AndroidCheck for SpecialPermissionsCheck {
     fn meta(&self) -> CheckMeta {

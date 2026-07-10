@@ -6,6 +6,7 @@
 pub mod binary;
 pub mod checks;
 pub mod metadata;
+mod permissions;
 mod project;
 
 pub use preflight_core::MetadataScan;

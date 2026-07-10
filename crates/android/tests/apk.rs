@@ -1,6 +1,7 @@
 //! Tests for the `.apk` binary layer using crafted fake archives.
 
 use preflight_android::binary::{run_checks, BinarySnapshot, DexFacts, ManifestFacts};
+use preflight_core::Severity;
 use std::collections::BTreeSet;
 use std::io::Write;
 use std::path::PathBuf;
@@ -113,6 +114,32 @@ fn dex_facts_drive_checks() {
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert!(ids.contains(&"ANDROID-DEX-001".to_string()));
     assert!(ids.contains(&"ANDROID-DEX-002".to_string()));
+}
+
+#[test]
+fn compiled_manifest_permissions_are_flagged() {
+    let snap = BinarySnapshot {
+        abis: BTreeSet::from(["arm64-v8a".to_string()]),
+        manifest: Some(ManifestFacts {
+            target_sdk: Some(35),
+            permissions: vec![
+                "android.permission.READ_SMS".to_string(), // restricted -> Error
+                "android.permission.MANAGE_EXTERNAL_STORAGE".to_string(), // special -> Warning
+                "android.permission.CAMERA".to_string(),   // sensitive -> Info
+                "android.permission.INTERNET".to_string(), // ignored
+            ],
+            ..Default::default()
+        }),
+        dex: DexFacts::default(),
+        unaligned_native_libs: vec![],
+    };
+    let perm: Vec<_> = run_checks(&snap)
+        .into_iter()
+        .filter(|f| f.check_id == "ANDROID-BIN-007")
+        .collect();
+    assert_eq!(perm.len(), 3);
+    assert!(perm.iter().any(|f| f.severity == Severity::Error)); // READ_SMS
+    assert!(perm.iter().any(|f| f.severity == Severity::Info)); // CAMERA
 }
 
 #[test]
