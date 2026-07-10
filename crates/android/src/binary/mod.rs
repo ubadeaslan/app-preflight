@@ -11,6 +11,7 @@
 //! hand-built [`BinarySnapshot`].
 
 mod dex;
+mod elf;
 mod manifest;
 
 pub use dex::DexFacts;
@@ -35,6 +36,8 @@ pub struct BinarySnapshot {
     pub manifest: Option<ManifestFacts>,
     /// Byte-level signals from the app's `classes*.dex`.
     pub dex: DexFacts,
+    /// 64-bit native libraries whose LOAD segments aren't 16 KB-aligned.
+    pub unaligned_native_libs: Vec<String>,
 }
 
 /// ABIs that satisfy Google Play's 64-bit requirement.
@@ -180,6 +183,29 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
         );
     }
 
+    // ANDROID-BIN-006 — 16 KB page-size alignment (required for API 35+ uploads
+    // since 2025-11-01). Only gate when the target is unknown or >= 35.
+    let target = snapshot.manifest.as_ref().and_then(|m| m.target_sdk);
+    if !snapshot.unaligned_native_libs.is_empty() && target.map(|t| t >= 35).unwrap_or(true) {
+        let mut shown = snapshot.unaligned_native_libs.clone();
+        shown.sort();
+        shown.truncate(5);
+        findings.push(
+            Finding::from_meta(
+                &SIXTEEN_KB_META,
+                format!(
+                    "Native librar(ies) are not 16 KB-aligned: {}. Since 2025-11-01 Google Play \
+                     blocks uploads targeting API 35+ that don't support 16 KB page sizes.",
+                    shown.join(", ")
+                ),
+            )
+            .remediation(
+                "Rebuild the native code with a 16 KB max-page-size linker flag (NDK r27+ / AGP \
+                 8.5.1+) so LOAD segments align to 16384.",
+            ),
+        );
+    }
+
     findings
 }
 
@@ -193,8 +219,20 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
         SECRETS_META,
         RESTRICTED_API_META,
         TEST_ONLY_META,
+        SIXTEEN_KB_META,
     ]
 }
+
+const SIXTEEN_KB_META: CheckMeta = CheckMeta {
+    id: "ANDROID-BIN-006",
+    title: "Native libraries not 16 KB page-size aligned",
+    platform: Platform::Android,
+    category: Category::Binary,
+    default_severity: Severity::Error,
+    confidence: Confidence::Medium,
+    guideline: Some("Play: 16 KB page size"),
+    docs_url: Some("https://developer.android.com/guide/practices/page-sizes"),
+};
 
 const TEST_ONLY_META: CheckMeta = CheckMeta {
     id: "ANDROID-BIN-005",
@@ -296,12 +334,16 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
 
     let mut abis = BTreeSet::new();
     let mut dex_names = Vec::new();
+    let mut native_libs_64 = Vec::new();
     for name in archive.file_names() {
         // Entries look like `lib/arm64-v8a/libfoo.so`.
         if let Some(rest) = name.strip_prefix("lib/") {
             if let Some((abi, _)) = rest.split_once('/') {
                 if !abi.is_empty() {
                     abis.insert(abi.to_string());
+                    if KNOWN_64BIT.contains(&abi) && name.ends_with(".so") {
+                        native_libs_64.push(name.to_string());
+                    }
                 }
             }
         } else if is_dex_name(name) {
@@ -322,11 +364,43 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
         }
     }
 
+    // Check 16 KB page-size alignment of each 64-bit native lib. Only the ELF
+    // header + program headers are needed, so read a small prefix.
+    let mut unaligned_native_libs = Vec::new();
+    for name in &native_libs_64 {
+        if let Ok(bytes) = read_entry_prefix(&mut archive, name, 256 * 1024) {
+            if elf::is_16k_aligned(&bytes) == Some(false) {
+                unaligned_native_libs.push(name.clone());
+            }
+        }
+    }
+
     Ok(BinarySnapshot {
         abis,
         manifest,
         dex: dex_facts,
+        unaligned_native_libs,
     })
+}
+
+/// Read at most `limit` bytes of an entry — enough for an ELF header + program
+/// headers without pulling a whole multi-MB `.so` into memory.
+fn read_entry_prefix(
+    archive: &mut ZipArchive<std::fs::File>,
+    name: &str,
+    limit: u64,
+) -> Result<Vec<u8>, BinaryError> {
+    use std::io::Read;
+    let entry = archive
+        .by_name(name)
+        .map_err(|e| BinaryError::Zip(e.to_string()))?;
+    let cap = entry.size().min(limit);
+    let mut buf = Vec::with_capacity(cap as usize);
+    entry
+        .take(limit)
+        .read_to_end(&mut buf)
+        .map_err(BinaryError::Io)?;
+    Ok(buf)
 }
 
 /// `classes.dex`, `classes2.dex`, … at the archive root.

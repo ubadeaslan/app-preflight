@@ -108,10 +108,29 @@ fn dex_facts_drive_checks() {
             secret_kinds: vec!["Google API key".into()],
             ..Default::default()
         },
+        unaligned_native_libs: vec![],
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert!(ids.contains(&"ANDROID-DEX-001".to_string()));
     assert!(ids.contains(&"ANDROID-DEX-002".to_string()));
+}
+
+#[test]
+fn unaligned_native_lib_flags_16kb_check() {
+    let snap = BinarySnapshot {
+        abis: BTreeSet::from(["arm64-v8a".to_string()]),
+        manifest: Some(ManifestFacts {
+            target_sdk: Some(35),
+            ..Default::default()
+        }),
+        dex: DexFacts::default(),
+        unaligned_native_libs: vec!["lib/arm64-v8a/libfoo.so".to_string()],
+    };
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert!(ids.contains(&"ANDROID-BIN-006".to_string()));
+    // arm64-v8a present + target 35 => not flagged for 64-bit or targetSdk.
+    assert!(!ids.contains(&"ANDROID-BIN-001".to_string()));
+    assert!(!ids.contains(&"ANDROID-BIN-003".to_string()));
 }
 
 #[test]
@@ -120,6 +139,7 @@ fn snapshot_check_detects_32bit_only() {
         abis: BTreeSet::from(["armeabi-v7a".to_string(), "x86".to_string()]),
         manifest: None,
         dex: DexFacts::default(),
+        unaligned_native_libs: vec![],
     };
     assert_eq!(run_checks(&snap).len(), 1);
 }
@@ -136,6 +156,7 @@ fn manifest_facts_drive_binary_checks() {
             permissions: vec![],
         }),
         dex: DexFacts::default(),
+        unaligned_native_libs: vec![],
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert!(ids.contains(&"ANDROID-BIN-002".to_string()));

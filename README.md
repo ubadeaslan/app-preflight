@@ -144,6 +144,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-DEX-002`    | Android | Hard-coded secret (API key / AWS key / PEM) in the DEX |
 | `ANDROID-DEX-003`    | Android | Restricted / non-SDK (hidden) API class referenced in the DEX |
 | `ANDROID-BIN-005`    | Android | Compiled manifest is marked `testOnly` |
+| `ANDROID-BIN-006`    | Android | 64-bit native libs not 16 KB page-size aligned (API 35+) |
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);
