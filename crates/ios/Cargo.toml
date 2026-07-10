@@ -1,0 +1,12 @@
+[package]
+name = "preflight-ios"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "iOS project analyzers and App Store rejection checks for app-preflight."
+
+[dependencies]
+preflight-core = { workspace = true }
+plist = { workspace = true }
+walkdir = { workspace = true }

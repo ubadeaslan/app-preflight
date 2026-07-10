@@ -1,0 +1,12 @@
+[package]
+name = "preflight-android"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Android project analyzers and Google Play submission checks for app-preflight."
+
+[dependencies]
+preflight-core = { workspace = true }
+roxmltree = { workspace = true }
+walkdir = { workspace = true }

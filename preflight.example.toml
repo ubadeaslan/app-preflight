@@ -1,0 +1,11 @@
+# Copy to `preflight.toml` at your project root. All fields are optional —
+# preflight runs with zero configuration.
+
+# Check ids to skip entirely. Run `preflight rules` to see all ids.
+disabled_checks = []
+
+# Hide findings below this severity: "info" | "warning" | "error".
+# min_severity = "info"
+
+# Exit non-zero at this severity or above. Defaults to "error".
+# fail_on = "warning"

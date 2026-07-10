@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/ios", "crates/android", "crates/cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ubadeaslan/app-preflight"
+authors = ["app-preflight contributors"]
+rust-version = "1.80"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+anyhow = "1"
+walkdir = "2"
+plist = "1"
+roxmltree = "0.20"
+clap = { version = "4", features = ["derive"] }
+
+preflight-core = { path = "crates/core" }
+preflight-ios = { path = "crates/ios" }
+preflight-android = { path = "crates/android" }
+
+[profile.release]
+strip = true
+lto = "thin"
