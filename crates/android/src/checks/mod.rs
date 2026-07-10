@@ -2,14 +2,17 @@
 
 use crate::AndroidCheck;
 
+mod backup;
 mod cleartext;
 mod debuggable;
 mod exported;
+mod exported_provider;
 mod foreground_service;
 mod network_security_config;
 mod sensitive_permissions;
 mod special_permissions;
 mod target_sdk;
+mod test_only;
 
 pub fn registry() -> Vec<Box<dyn AndroidCheck>> {
     vec![
@@ -21,5 +24,8 @@ pub fn registry() -> Vec<Box<dyn AndroidCheck>> {
         Box::new(exported::ExportedComponentCheck),
         Box::new(special_permissions::SpecialPermissionsCheck),
         Box::new(network_security_config::NetworkSecurityConfigCheck),
+        Box::new(test_only::TestOnlyCheck),
+        Box::new(exported_provider::ExportedProviderCheck),
+        Box::new(backup::BackupRulesCheck),
     ]
 }

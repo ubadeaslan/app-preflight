@@ -11,6 +11,7 @@ mod entitlements;
 mod location;
 mod privacy_manifest;
 mod sign_in_with_apple;
+mod url_schemes;
 mod usage_descriptions;
 mod versioning;
 
@@ -29,5 +30,6 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(entitlements::ApsEnvironmentCheck),
         Box::new(entitlements::GetTaskAllowCheck),
         Box::new(ats_exceptions::AtsExceptionDomainsCheck),
+        Box::new(url_schemes::QuerySchemesLimitCheck),
     ]
 }

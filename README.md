@@ -100,6 +100,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-CONFIG-005`  | iOS | `aps-environment` set to `development` in entitlements |
 | `IOS-CONFIG-006`  | iOS | `get-task-allow` enabled (debuggable entitlement) |
 | `IOS-CONFIG-007`  | iOS | Insecure ATS exception domain (`NSExceptionDomains`) |
+| `IOS-CONFIG-008`  | iOS | `LSApplicationQueriesSchemes` over the 50-entry limit |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
 | `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
@@ -120,6 +121,9 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-CONFIG-004` | Android | Foreground service without a `foregroundServiceType` (Android 14) |
 | `ANDROID-CONFIG-005` | Android | Component with intent-filter missing `android:exported` (Android 12) |
 | `ANDROID-CONFIG-006` | Android | Network security config permits cleartext traffic |
+| `ANDROID-CONFIG-007` | Android | `android:testOnly="true"` (Play refuses to install) |
+| `ANDROID-CONFIG-008` | Android | Exported `<provider>` without a permission |
+| `ANDROID-PRIVACY-003`| Android | Backup enabled without backup rules |
 | `ANDROID-PRIVACY-002`| Android | Special permission needing a Play declaration (e.g. All files access) |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 | `ANDROID-META-001`   | Android | Missing / too-short full description |
@@ -135,6 +139,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-DEX-001`    | Android | Dynamic code loading (`DexClassLoader`) in `classes*.dex` |
 | `ANDROID-DEX-002`    | Android | Hard-coded secret (API key / AWS key / PEM) in the DEX |
 | `ANDROID-DEX-003`    | Android | Restricted / non-SDK (hidden) API class referenced in the DEX |
+| `ANDROID-BIN-005`    | Android | Compiled manifest is marked `testOnly` |
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);

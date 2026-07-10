@@ -10,6 +10,8 @@
     <application
         android:label="MyApp"
         android:debuggable="true"
+        android:testOnly="true"
+        android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity android:name=".MainActivity">
@@ -19,5 +21,9 @@
             </intent-filter>
         </activity>
         <service android:name=".SyncService" />
+        <provider
+            android:name=".DataProvider"
+            android:authorities="com.example.myapp.data"
+            android:exported="true" />
     </application>
 </manifest>

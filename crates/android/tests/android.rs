@@ -33,6 +33,9 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"ANDROID-CONFIG-005")); // activity intent-filter w/o exported
     assert!(ids.contains(&"ANDROID-PRIVACY-002")); // MANAGE_EXTERNAL_STORAGE
     assert!(ids.contains(&"ANDROID-CONFIG-006")); // NSC cleartextTrafficPermitted
+    assert!(ids.contains(&"ANDROID-CONFIG-007")); // testOnly
+    assert!(ids.contains(&"ANDROID-CONFIG-008")); // exported provider w/o permission
+    assert!(ids.contains(&"ANDROID-PRIVACY-003")); // allowBackup without rules
 }
 
 #[test]

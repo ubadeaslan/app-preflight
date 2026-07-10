@@ -110,6 +110,17 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
                 ),
             );
         }
+        // ANDROID-BIN-005 — testOnly in the shipped manifest.
+        if m.test_only {
+            findings.push(
+                Finding::from_meta(
+                    &TEST_ONLY_META,
+                    "The compiled manifest sets android:testOnly=\"true\". Google Play refuses to \
+                     install test-only APKs.",
+                )
+                .remediation("Remove android:testOnly for the release build."),
+            );
+        }
     }
 
     // ANDROID-DEX-001 — dynamic code loading.
@@ -176,8 +187,22 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
         DYNAMIC_CODE_META,
         SECRETS_META,
         RESTRICTED_API_META,
+        TEST_ONLY_META,
     ]
 }
+
+const TEST_ONLY_META: CheckMeta = CheckMeta {
+    id: "ANDROID-BIN-005",
+    title: "Compiled manifest is marked testOnly",
+    platform: Platform::Android,
+    category: Category::Binary,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: Some("Play: Upload requirements"),
+    docs_url: Some(
+        "https://developer.android.com/guide/topics/manifest/application-element#testOnly",
+    ),
+};
 
 const DYNAMIC_CODE_META: CheckMeta = CheckMeta {
     id: "ANDROID-DEX-001",

@@ -63,6 +63,28 @@ fn background_location_without_any_always_key_is_flagged() {
 }
 
 #[test]
+fn too_many_query_schemes_is_flagged() {
+    let dir = std::env::temp_dir().join(format!("preflight_schemes_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&dir);
+    let schemes: String = (0..51).map(|i| format!("<string>s{i}</string>")).collect();
+    std::fs::write(
+        dir.join("Info.plist"),
+        format!(
+            r#"<?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.acme.app</string>
+<key>LSApplicationQueriesSchemes</key><array>{schemes}</array>
+</dict></plist>"#
+        ),
+    )
+    .unwrap();
+
+    let findings = preflight_ios::analyze(&dir, &Config::default()).expect("ios project");
+    let _ = std::fs::remove_dir_all(&dir);
+    assert!(ids(&findings).contains(&"IOS-CONFIG-008"));
+}
+
+#[test]
 fn malformed_info_plist_does_not_panic() {
     let dir = std::env::temp_dir().join(format!("preflight_badplist_{}", std::process::id()));
     let _ = std::fs::create_dir_all(&dir);

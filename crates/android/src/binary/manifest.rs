@@ -11,6 +11,7 @@ use axmldecoder::{Element, Node};
 #[derive(Debug, Clone, Default)]
 pub struct ManifestFacts {
     pub debuggable: bool,
+    pub test_only: bool,
     pub target_sdk: Option<u32>,
     pub uses_cleartext_traffic: bool,
     pub permissions: Vec<String>,
@@ -38,6 +39,9 @@ fn walk(node: &Node, facts: &mut ManifestFacts) {
         "application" => {
             if let Some(v) = attr(el, "debuggable") {
                 facts.debuggable = v.eq_ignore_ascii_case("true");
+            }
+            if let Some(v) = attr(el, "testOnly") {
+                facts.test_only = v.eq_ignore_ascii_case("true");
             }
             if let Some(v) = attr(el, "usesCleartextTraffic") {
                 facts.uses_cleartext_traffic = v.eq_ignore_ascii_case("true");

@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 45 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 50 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (24)
+## iOS (25)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -19,6 +19,7 @@ app-preflight ships 45 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-005` | warning | configuration |  | aps-environment set to development |
 | `IOS-CONFIG-006` | error | configuration | 2.5.1 | get-task-allow enabled (debuggable entitlement) |
 | `IOS-CONFIG-007` | warning | configuration | 2.5.1 | Insecure App Transport Security exception domain |
+| `IOS-CONFIG-008` | warning | configuration |  | LSApplicationQueriesSchemes exceeds the 50-entry limit |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
@@ -31,7 +32,7 @@ app-preflight ships 45 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 
-## Android (21)
+## Android (25)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -39,12 +40,15 @@ app-preflight ships 45 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-BIN-002` | error | binary | Play: Device and Network Abuse | Compiled manifest is debuggable |
 | `ANDROID-BIN-003` | error | binary | Play: Target API level | Compiled targetSdk below Google Play minimum |
 | `ANDROID-BIN-004` | warning | binary | Play: User Data | Compiled manifest permits cleartext traffic |
+| `ANDROID-BIN-005` | error | binary | Play: Upload requirements | Compiled manifest is marked testOnly |
 | `ANDROID-CONFIG-001` | error | configuration | Play: Device and Network Abuse | Application is marked debuggable |
 | `ANDROID-CONFIG-002` | error | configuration | Play: Target API level | targetSdk below Google Play minimum |
 | `ANDROID-CONFIG-003` | warning | configuration | Play: User Data | Cleartext network traffic is permitted |
 | `ANDROID-CONFIG-004` | warning | configuration | Android 14: Foreground service types | Foreground service without a foregroundServiceType |
 | `ANDROID-CONFIG-005` | error | configuration | Android 12: explicit exported | Component with intent-filter missing android:exported |
 | `ANDROID-CONFIG-006` | warning | configuration | Play: User Data | Network security config permits cleartext traffic |
+| `ANDROID-CONFIG-007` | error | configuration | Play: Upload requirements | Application is marked testOnly |
+| `ANDROID-CONFIG-008` | warning | configuration | Play: User Data | Exported content provider without a permission |
 | `ANDROID-DEX-001` | warning | binary | Play: Device and Network Abuse | Dynamic code loading (DexClassLoader) |
 | `ANDROID-DEX-002` | warning | binary |  | Hard-coded secret in the compiled code |
 | `ANDROID-DEX-003` | warning | binary | Play: non-SDK interface restrictions | Restricted / non-SDK (hidden) API reference |
@@ -56,3 +60,4 @@ app-preflight ships 45 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-META-006` | warning | metadata | Play: Store listing | No contact details on the store listing |
 | `ANDROID-PRIVACY-001` | warning | privacy | Play: Permissions and APIs that Access Sensitive Info | Sensitive permission requires Play policy declaration |
 | `ANDROID-PRIVACY-002` | warning | privacy | Play: Permissions declaration | Special permission requiring a Play declaration |
+| `ANDROID-PRIVACY-003` | info | privacy | Play: Data safety | Backup enabled without backup rules |

@@ -130,6 +130,7 @@ fn manifest_facts_drive_binary_checks() {
         abis: BTreeSet::new(),
         manifest: Some(ManifestFacts {
             debuggable: true,             // ANDROID-BIN-002
+            test_only: true,              // ANDROID-BIN-005
             target_sdk: Some(30),         // ANDROID-BIN-003 (< 34)
             uses_cleartext_traffic: true, // ANDROID-BIN-004
             permissions: vec![],
@@ -140,4 +141,5 @@ fn manifest_facts_drive_binary_checks() {
     assert!(ids.contains(&"ANDROID-BIN-002".to_string()));
     assert!(ids.contains(&"ANDROID-BIN-003".to_string()));
     assert!(ids.contains(&"ANDROID-BIN-004".to_string()));
+    assert!(ids.contains(&"ANDROID-BIN-005".to_string()));
 }
