@@ -205,6 +205,41 @@ fn print_finding(f: &Finding) {
     println!();
 }
 
+/// The full check catalog rendered as Markdown (the source of `CHECKS.md`).
+pub fn rules_markdown() -> String {
+    let mut metas: Vec<CheckMeta> = preflight_ios::all_check_meta();
+    metas.extend(preflight_android::all_check_meta());
+    metas.sort_by(|a, b| a.id.cmp(b.id));
+
+    let mut out = String::from("# Checks\n\n");
+    out.push_str(&format!(
+        "app-preflight ships {} checks. Regenerate this file with \
+         `preflight rules --format markdown > CHECKS.md`.\n",
+        metas.len()
+    ));
+
+    for (platform, heading) in [
+        (preflight_core::Platform::Ios, "iOS"),
+        (preflight_core::Platform::Android, "Android"),
+    ] {
+        let group: Vec<&CheckMeta> = metas.iter().filter(|m| m.platform == platform).collect();
+        out.push_str(&format!("\n## {heading} ({})\n\n", group.len()));
+        out.push_str("| ID | Severity | Category | Guideline | Check |\n");
+        out.push_str("|----|----------|----------|-----------|-------|\n");
+        for m in group {
+            out.push_str(&format!(
+                "| `{}` | {} | {} | {} | {} |\n",
+                m.id,
+                m.default_severity.as_str(),
+                m.category.as_str(),
+                m.guideline.unwrap_or(""),
+                m.title,
+            ));
+        }
+    }
+    out
+}
+
 pub fn print_rules(json: bool) {
     let mut metas: Vec<CheckMeta> = preflight_ios::all_check_meta();
     metas.extend(preflight_android::all_check_meta());

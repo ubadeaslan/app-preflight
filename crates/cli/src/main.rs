@@ -100,7 +100,11 @@ fn main() -> ExitCode {
     let result = match cli.command {
         Command::Check(args) => run_check(args),
         Command::Rules(args) => {
-            render::print_rules(matches!(args.format, Format::Json));
+            match args.format {
+                Format::Markdown => print!("{}", render::rules_markdown()),
+                Format::Json => render::print_rules(true),
+                _ => render::print_rules(false),
+            }
             Ok(ExitCode::SUCCESS)
         }
         Command::Init => init::run(),

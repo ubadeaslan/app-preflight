@@ -133,7 +133,8 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);
-everything else is offline. Run `preflight rules` for the live list.
+everything else is offline. Run `preflight rules` for the live list, or see
+[CHECKS.md](CHECKS.md) for the full generated catalog.
 
 ## Scanning a compiled `.ipa` / `.apk`
 

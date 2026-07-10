@@ -16,6 +16,26 @@ fn preflight() -> Command {
 }
 
 #[test]
+fn checks_md_is_in_sync() {
+    let out = preflight()
+        .args(["rules", "--format", "markdown"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let generated = String::from_utf8(out).unwrap().replace("\r\n", "\n");
+    let committed =
+        std::fs::read_to_string(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../CHECKS.md"))
+            .unwrap()
+            .replace("\r\n", "\n");
+    assert_eq!(
+        generated, committed,
+        "CHECKS.md is stale — run `preflight rules --format markdown > CHECKS.md`"
+    );
+}
+
+#[test]
 fn rules_lists_checks_and_exits_zero() {
     preflight()
         .arg("rules")
