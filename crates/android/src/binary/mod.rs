@@ -1,15 +1,18 @@
 //! Compiled `.apk` inspection.
 //!
-//! An APK is a ZIP. We read two things without a full DEX parser:
-//! - the native ABIs under `lib/<abi>/` (Google Play's 64-bit requirement), and
+//! An APK is a ZIP. We read three things without a full DEX parser:
+//! - the native ABIs under `lib/<abi>/` (Google Play's 64-bit requirement),
 //! - the compiled `AndroidManifest.xml`, decoded from binary AXML into
-//!   [`manifest::ManifestFacts`] (the merged, ground-truth manifest).
+//!   [`manifest::ManifestFacts`] (the merged, ground-truth manifest), and
+//! - byte-level signals from `classes*.dex` ([`dex::DexFacts`]).
 //!
 //! Extraction is separated from checks so the check logic is unit-testable on a
 //! hand-built [`BinarySnapshot`].
 
+mod dex;
 mod manifest;
 
+pub use dex::DexFacts;
 pub use manifest::ManifestFacts;
 
 use preflight_core::{Category, CheckMeta, Confidence, Finding, Platform, Severity};
@@ -27,6 +30,8 @@ pub struct BinarySnapshot {
     pub abis: BTreeSet<String>,
     /// Facts decoded from the compiled `AndroidManifest.xml`, if decodable.
     pub manifest: Option<ManifestFacts>,
+    /// Byte-level signals from the app's `classes*.dex`.
+    pub dex: DexFacts,
 }
 
 impl BinarySnapshot {
@@ -106,6 +111,39 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
         }
     }
 
+    // ANDROID-DEX-001 — dynamic code loading.
+    if snapshot.dex.dynamic_code_loading {
+        findings.push(
+            Finding::from_meta(
+                &DYNAMIC_CODE_META,
+                "The DEX references `DexClassLoader`, i.e. loading executable code at runtime. \
+                 Google Play restricts downloading and executing code that isn't in the APK.",
+            )
+            .remediation(
+                "Avoid loading external dex/code. If it's from a dependency, confirm it doesn't \
+                 fetch executable code at runtime.",
+            ),
+        );
+    }
+
+    // ANDROID-DEX-002 — hard-coded secrets.
+    if !snapshot.dex.secret_kinds.is_empty() {
+        findings.push(
+            Finding::from_meta(
+                &SECRETS_META,
+                format!(
+                    "The DEX appears to contain hard-coded secret(s): {}. Embedded keys can be \
+                     extracted from a shipped APK.",
+                    snapshot.dex.secret_kinds.join(", ")
+                ),
+            )
+            .remediation(
+                "Move secrets out of the app (server-side), rotate any exposed keys, and restrict \
+                 API keys by app signature/package.",
+            ),
+        );
+    }
+
     findings
 }
 
@@ -115,8 +153,32 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
         DEBUGGABLE_META,
         TARGET_SDK_META,
         CLEARTEXT_META,
+        DYNAMIC_CODE_META,
+        SECRETS_META,
     ]
 }
+
+const DYNAMIC_CODE_META: CheckMeta = CheckMeta {
+    id: "ANDROID-DEX-001",
+    title: "Dynamic code loading (DexClassLoader)",
+    platform: Platform::Android,
+    category: Category::Binary,
+    default_severity: Severity::Warning,
+    confidence: Confidence::Medium,
+    guideline: Some("Play: Device and Network Abuse"),
+    docs_url: Some("https://support.google.com/googleplay/android-developer/answer/9888379"),
+};
+
+const SECRETS_META: CheckMeta = CheckMeta {
+    id: "ANDROID-DEX-002",
+    title: "Hard-coded secret in the compiled code",
+    platform: Platform::Android,
+    category: Category::Binary,
+    default_severity: Severity::Warning,
+    confidence: Confidence::Medium,
+    guideline: None,
+    docs_url: Some("https://developer.android.com/privacy-and-security/security-tips"),
+};
 
 const SIXTYFOUR_BIT_META: CheckMeta = CheckMeta {
     id: "ANDROID-BIN-001",
@@ -169,6 +231,7 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     let mut archive = ZipArchive::new(file).map_err(|e| BinaryError::Zip(e.to_string()))?;
 
     let mut abis = BTreeSet::new();
+    let mut dex_names = Vec::new();
     for name in archive.file_names() {
         // Entries look like `lib/arm64-v8a/libfoo.so`.
         if let Some(rest) = name.strip_prefix("lib/") {
@@ -177,6 +240,8 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
                     abis.insert(abi.to_string());
                 }
             }
+        } else if is_dex_name(name) {
+            dex_names.push(name.to_string());
         }
     }
 
@@ -185,7 +250,24 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
         .ok()
         .and_then(|bytes| manifest::decode(&bytes));
 
-    Ok(BinarySnapshot { abis, manifest })
+    // Byte-scan every classes*.dex.
+    let mut dex_facts = DexFacts::default();
+    for name in &dex_names {
+        if let Ok(bytes) = read_entry(&mut archive, name) {
+            dex::scan(&bytes, &mut dex_facts);
+        }
+    }
+
+    Ok(BinarySnapshot {
+        abis,
+        manifest,
+        dex: dex_facts,
+    })
+}
+
+/// `classes.dex`, `classes2.dex`, … at the archive root.
+fn is_dex_name(name: &str) -> bool {
+    name.starts_with("classes") && name.ends_with(".dex") && !name.contains('/')
 }
 
 fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec<u8>, BinaryError> {

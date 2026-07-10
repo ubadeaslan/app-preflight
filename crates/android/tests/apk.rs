@@ -1,19 +1,30 @@
 //! Tests for the `.apk` binary layer using crafted fake archives.
 
-use preflight_android::binary::{run_checks, BinarySnapshot, ManifestFacts};
+use preflight_android::binary::{run_checks, BinarySnapshot, DexFacts, ManifestFacts};
 use std::collections::BTreeSet;
 use std::io::Write;
 use std::path::PathBuf;
 use zip::write::SimpleFileOptions;
 
 fn write_apk(tag: &str, entries: &[&str]) -> PathBuf {
+    write_apk_with(
+        tag,
+        &entries
+            .iter()
+            .map(|n| (*n, "\x7fELF fake"))
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Write an APK with explicit per-entry contents.
+fn write_apk_with(tag: &str, entries: &[(&str, &str)]) -> PathBuf {
     let path = std::env::temp_dir().join(format!("preflight_{tag}_{}.apk", std::process::id()));
     let file = std::fs::File::create(&path).unwrap();
     let mut zw = zip::ZipWriter::new(file);
     let opts = SimpleFileOptions::default();
-    for name in entries {
+    for (name, body) in entries {
         zw.start_file(*name, opts).unwrap();
-        zw.write_all(b"\x7fELF fake").unwrap();
+        zw.write_all(body.as_bytes()).unwrap();
     }
     zw.finish().unwrap();
     path
@@ -49,10 +60,41 @@ fn no_native_libs_is_fine() {
 }
 
 #[test]
+fn dex_scan_flags_dynamic_code_loading_and_secrets() {
+    let dex = "prefix Ldalvik/system/DexClassLoader; middle \
+               AIzaSyA1234567890abcdefghijklmnopqrstuvw end";
+    let path = write_apk_with(
+        "dex",
+        &[("classes.dex", dex), ("AndroidManifest.xml", "junk")],
+    );
+    let findings = preflight_android::analyze_binary(&path).expect("analyzes");
+    let _ = std::fs::remove_file(&path);
+    let ids: Vec<&str> = findings.iter().map(|f| f.check_id.as_str()).collect();
+    assert!(ids.contains(&"ANDROID-DEX-001"), "dynamic code loading");
+    assert!(ids.contains(&"ANDROID-DEX-002"), "hard-coded secret");
+}
+
+#[test]
+fn dex_facts_drive_checks() {
+    let snap = BinarySnapshot {
+        abis: BTreeSet::new(),
+        manifest: None,
+        dex: DexFacts {
+            dynamic_code_loading: true,
+            secret_kinds: vec!["Google API key".into()],
+        },
+    };
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert!(ids.contains(&"ANDROID-DEX-001".to_string()));
+    assert!(ids.contains(&"ANDROID-DEX-002".to_string()));
+}
+
+#[test]
 fn snapshot_check_detects_32bit_only() {
     let snap = BinarySnapshot {
         abis: BTreeSet::from(["armeabi-v7a".to_string(), "x86".to_string()]),
         manifest: None,
+        dex: DexFacts::default(),
     };
     assert_eq!(run_checks(&snap).len(), 1);
 }
@@ -67,6 +109,7 @@ fn manifest_facts_drive_binary_checks() {
             uses_cleartext_traffic: true, // ANDROID-BIN-004
             permissions: vec![],
         }),
+        dex: DexFacts::default(),
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert!(ids.contains(&"ANDROID-BIN-002".to_string()));
