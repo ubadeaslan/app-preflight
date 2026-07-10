@@ -58,6 +58,8 @@ struct RulesArgs {
 enum Format {
     Pretty,
     Json,
+    /// SARIF 2.1.0 for GitHub code scanning and other tools.
+    Sarif,
 }
 
 #[derive(Copy, Clone, ValueEnum)]
@@ -183,6 +185,7 @@ fn run_binary_check(path: &std::path::Path, args: &CheckArgs) -> Result<ExitCode
     match args.format {
         Format::Pretty => render::print_pretty(&report, path),
         Format::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+        Format::Sarif => println!("{}", render::sarif(&report, path)),
     }
     Ok(if fail {
         ExitCode::FAILURE
@@ -251,6 +254,7 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
     match args.format {
         Format::Pretty => render::print_pretty(&report, &root),
         Format::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+        Format::Sarif => println!("{}", render::sarif(&report, &root)),
     }
 
     Ok(if fail {

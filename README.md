@@ -215,6 +215,30 @@ jobs:
       - run: preflight check . --fail-on warning
 ```
 
+### Inline findings via code scanning
+
+Emit SARIF and upload it so findings appear inline on the PR and in the
+repository's **Security > Code scanning** tab:
+
+```yaml
+name: preflight
+on: [pull_request]
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install --git https://github.com/ubadeaslan/app-preflight preflight-cli
+      - run: preflight check . --format sarif > preflight.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: preflight.sarif
+```
+
 ## Architecture
 
 A small Cargo workspace:
