@@ -636,6 +636,7 @@ dependencies = [
  "preflight-android",
  "preflight-core",
  "preflight-ios",
+ "serde",
  "serde_json",
 ]
 

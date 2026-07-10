@@ -16,4 +16,5 @@ preflight-ios = { workspace = true }
 preflight-android = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }

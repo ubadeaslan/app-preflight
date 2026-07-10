@@ -5,6 +5,7 @@
 
 use crate::finding::Severity;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -17,6 +18,8 @@ pub struct Config {
     /// Severity at or above which the process exits non-zero. Defaults to
     /// `error` when unset.
     pub fail_on: Option<Severity>,
+    /// Per-check severity overrides, e.g. `IOS-CONFIG-001 = "warning"`.
+    pub severity: HashMap<String, Severity>,
 }
 
 impl Config {
@@ -32,6 +35,11 @@ impl Config {
 
     pub fn is_disabled(&self, check_id: &str) -> bool {
         self.disabled_checks.iter().any(|c| c == check_id)
+    }
+
+    /// The effective severity for a check: its override, or `default`.
+    pub fn severity_for(&self, check_id: &str, default: Severity) -> Severity {
+        self.severity.get(check_id).copied().unwrap_or(default)
     }
 
     /// Severity threshold that should fail the run. Defaults to `Error`.

@@ -1,5 +1,7 @@
 //! `preflight` — pre-submission checker for mobile apps.
 
+mod baseline;
+mod init;
 mod render;
 
 use anyhow::{Context as _, Result};
@@ -25,6 +27,8 @@ enum Command {
     Check(CheckArgs),
     /// List every check preflight knows about.
     Rules(RulesArgs),
+    /// Scaffold a preflight.toml and a CI workflow.
+    Init,
 }
 
 #[derive(Args)]
@@ -45,6 +49,16 @@ struct CheckArgs {
     /// Skip the App Store Connect metadata scan even if credentials are set.
     #[arg(long)]
     skip_metadata: bool,
+
+    /// Suppress findings already recorded in this baseline file (so only new
+    /// issues are reported). Defaults to `.preflight-baseline.json` when the
+    /// flag is given without a path.
+    #[arg(long, value_name = "PATH", num_args = 0..=1, default_missing_value = baseline::DEFAULT_PATH)]
+    baseline: Option<PathBuf>,
+
+    /// Write the current findings to the baseline file and exit 0.
+    #[arg(long)]
+    write_baseline: bool,
 }
 
 #[derive(Args)]
@@ -87,6 +101,7 @@ fn main() -> ExitCode {
             render::print_rules(matches!(args.format, Format::Json));
             Ok(ExitCode::SUCCESS)
         }
+        Command::Init => init::run(),
     };
 
     match result {
@@ -246,6 +261,29 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
 
     if !args.skip_metadata {
         run_metadata_scan(&root, &config, ios_present, android_present, &mut raw);
+    }
+
+    // Baseline: record current findings and exit, or suppress known ones.
+    if args.write_baseline {
+        let report = Report::build(raw, &config);
+        let path = args
+            .baseline
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(baseline::DEFAULT_PATH));
+        let n = baseline::write(&path, &report.findings, &root)?;
+        eprintln!("Wrote {n} finding(s) to baseline {}", path.display());
+        return Ok(ExitCode::SUCCESS);
+    }
+    if let Some(bpath) = &args.baseline {
+        if bpath.exists() {
+            let suppressed = baseline::suppress(bpath, &mut raw, &root)?;
+            if suppressed > 0 {
+                eprintln!(
+                    "Suppressed {suppressed} finding(s) via baseline {}",
+                    bpath.display()
+                );
+            }
+        }
     }
 
     let report = Report::build(raw, &config);

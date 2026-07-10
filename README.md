@@ -63,10 +63,16 @@ cargo install --git https://github.com/ubadeaslan/app-preflight preflight-cli
 ## Usage
 
 ```sh
-preflight check [PATH]          # scan a project (defaults to current dir)
-preflight check . --format json # machine-readable output for CI/tools
+preflight init                    # scaffold preflight.toml + a CI workflow
+preflight check [PATH]            # scan a project (defaults to current dir)
+preflight check . --format json   # machine-readable output for CI/tools
+preflight check . --format sarif  # SARIF for GitHub code scanning
 preflight check . --fail-on warning
-preflight rules                 # list every check preflight knows about
+preflight rules                   # list every check preflight knows about
+
+# Baseline: adopt on a project that isn't clean yet — fail only on NEW issues.
+preflight check . --write-baseline                       # record current findings
+preflight check . --baseline .preflight-baseline.json    # suppress those, fail on new
 ```
 
 `preflight` auto-detects whether the folder is an iOS project (`.xcodeproj`,
@@ -199,7 +205,15 @@ min_severity = "info"
 
 # Fail the process at this severity or above (default: error).
 fail_on = "warning"
+
+# Override the severity of specific checks.
+[severity]
+IOS-CONFIG-001 = "warning"
+ANDROID-DEX-002 = "error"
 ```
+
+`preflight init` writes a starter `preflight.toml` and a
+`.github/workflows/preflight.yml` for you.
 
 ## CI / GitHub Actions
 

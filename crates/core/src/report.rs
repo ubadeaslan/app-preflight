@@ -24,6 +24,10 @@ impl Report {
     /// first, then by check id for stable output.
     pub fn build(mut findings: Vec<Finding>, config: &Config) -> Self {
         findings.retain(|f| !config.is_disabled(&f.check_id));
+        // Apply per-check severity overrides before filtering/sorting.
+        for f in &mut findings {
+            f.severity = config.severity_for(&f.check_id, f.severity);
+        }
         if let Some(min) = config.min_severity {
             findings.retain(|f| f.severity >= min);
         }
@@ -102,6 +106,7 @@ mod tests {
             disabled_checks: vec!["A".into()],
             min_severity: Some(Severity::Warning),
             fail_on: None,
+            ..Default::default()
         };
         let report = Report::build(
             vec![
@@ -117,6 +122,20 @@ mod tests {
             .map(|f| f.check_id.as_str())
             .collect();
         assert_eq!(order, ["C"]); // A disabled, B below min severity
+    }
+
+    #[test]
+    fn severity_override_applies() {
+        let mut severity = std::collections::HashMap::new();
+        severity.insert("A".to_string(), Severity::Info);
+        let config = Config {
+            severity,
+            ..Default::default()
+        };
+        let report = Report::build(vec![finding("A", Severity::Error)], &config);
+        assert_eq!(report.findings[0].severity, Severity::Info);
+        assert_eq!(report.summary.errors, 0);
+        assert_eq!(report.summary.infos, 1);
     }
 
     #[test]
