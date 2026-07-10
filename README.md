@@ -11,6 +11,8 @@ target SDKs, placeholder bundle identifiers, and more.
 It's built to live in your terminal and your CI, so a rejection reason shows up
 in a pull request instead of three days into App Review.
 
+**Website:** https://ubadeaslan.github.io/app-preflight/
+
 ```
 $ preflight check ./MyApp
 

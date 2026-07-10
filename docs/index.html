@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>app-preflight — catch App Store & Play rejections before you ship</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --card: #f6f7f9;
+    --border: #e4e6eb; --accent: #2d6cdf; --err: #d13438; --warn: #b7791f;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1116; --fg: #e6e6e6; --muted: #9aa4b2; --card: #161b22;
+      --border: #2a2f37; --accent: #5a8bef;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  header { text-align: center; padding: 72px 20px 40px; }
+  h1 { font-size: 2.6rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .tag { font-size: 1.2rem; color: var(--muted); margin: 0 auto; max-width: 620px; }
+  .btns { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  a.btn {
+    display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none;
+    font-weight: 600; border: 1px solid var(--border);
+  }
+  a.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  a.btn.ghost { color: var(--fg); }
+  section { padding: 28px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 1.4rem; margin: 0 0 16px; }
+  pre {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto; font-family: var(--mono); font-size: 0.9rem;
+  }
+  code { font-family: var(--mono); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.94rem; }
+  footer { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 0.9rem; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>app-preflight</h1>
+      <p class="tag">Catch App Store &amp; Google Play rejections <strong>before</strong> you submit — a fast, zero-config CLI for iOS and Android.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://github.com/ubadeaslan/app-preflight">GitHub</a>
+        <a class="btn ghost" href="https://github.com/ubadeaslan/app-preflight/blob/main/CHECKS.md">All checks</a>
+        <a class="btn ghost" href="https://github.com/ubadeaslan/app-preflight/releases/latest">Download</a>
+      </div>
+    </header>
+
+    <section>
+      <h2>Why</h2>
+      <p>Most App Store &ldquo;red&rdquo; rejections are for boring, mechanical, <em>detectable</em> reasons —
+      an empty permission string, a missing privacy manifest, a debuggable build, a missing demo account.
+      preflight encodes those reasons as checks so a rejection shows up in a pull request instead of three
+      days into review.</p>
+    </section>
+
+    <section>
+      <h2>Quick start</h2>
+      <pre>cargo install --git https://github.com/ubadeaslan/app-preflight preflight-cli
+
+preflight check .                 # scan a project (iOS and/or Android)
+preflight check ./MyApp.ipa       # or a compiled artifact
+preflight check . --format sarif  # SARIF for GitHub code scanning</pre>
+    </section>
+
+    <section>
+      <h2>What it does</h2>
+      <div class="grid">
+        <div class="card"><h3>Source scan</h3><p>Info.plist, entitlements, PrivacyInfo.xcprivacy, AndroidManifest, Gradle, network security config.</p></div>
+        <div class="card"><h3>Store metadata</h3><p>App Store Connect &amp; Google Play APIs: demo account, privacy/support URLs, screenshots, descriptions.</p></div>
+        <div class="card"><h3>Compiled binary</h3><p>Unzips IPA/APK: Mach-O (UIWebView, private frameworks, IDFA/ATT) and DEX (hidden APIs, secrets, 64-bit).</p></div>
+        <div class="card"><h3>CI-native</h3><p>SARIF code scanning, Markdown job summaries, a baseline to fail only on new issues, and a GitHub Action.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Open source</h2>
+      <p>Dual-licensed MIT / Apache-2.0. Adding a check is a single file — see
+      <a href="https://github.com/ubadeaslan/app-preflight#contributing">Contributing</a>.</p>
+    </section>
+
+    <footer>
+      app-preflight · <a href="https://github.com/ubadeaslan/app-preflight">github.com/ubadeaslan/app-preflight</a>
+    </footer>
+  </div>
+</body>
+</html>
