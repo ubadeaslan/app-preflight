@@ -31,6 +31,7 @@ pub fn all_meta() -> Vec<CheckMeta> {
 const TITLE_LIMIT: usize = 30;
 const SHORT_DESC_LIMIT: usize = 80;
 const FULL_DESC_MIN: usize = 30;
+const FULL_DESC_MAX: usize = 4000;
 /// Play requires at least this many phone screenshots to publish.
 const MIN_PHONE_SCREENSHOTS: usize = 2;
 
@@ -75,6 +76,15 @@ impl MetadataCheck for FullDescription {
                     &FULL_DESCRIPTION_META,
                     format!(
                         "Full description for `{}` is very short ({} chars).",
+                        l.language,
+                        char_len(desc)
+                    ),
+                ));
+            } else if char_len(desc) > FULL_DESC_MAX {
+                findings.push(Finding::from_meta(
+                    &FULL_DESCRIPTION_META,
+                    format!(
+                        "Full description for `{}` is {} chars (Play limit {FULL_DESC_MAX}).",
                         l.language,
                         char_len(desc)
                     ),

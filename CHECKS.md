@@ -28,7 +28,7 @@ app-preflight ships 54 checks. Regenerate this file with `preflight rules --form
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
 | `IOS-META-002` | error | metadata | 1.5 | Missing support URL |
 | `IOS-META-003` | error | metadata | 2.1 | Demo account required but not provided |
-| `IOS-META-004` | warning | metadata | 2.3.7 | Weak or missing app description |
+| `IOS-META-004` | warning | metadata | 2.3 | Weak or missing app description |
 | `IOS-META-005` | error | metadata | 2.3.3 | No iPhone screenshots uploaded |
 | `IOS-META-006` | warning | metadata |  | Keyword list exceeds 100 characters |
 | `IOS-PRIVACY-001` | warning | privacy | 5.1.1 | Missing privacy manifest (PrivacyInfo.xcprivacy) |

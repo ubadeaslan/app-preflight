@@ -343,7 +343,9 @@ fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec
     let entry = archive
         .by_name(name)
         .map_err(|e| BinaryError::Zip(e.to_string()))?;
-    let cap = entry.size().min(MAX_ENTRY_BYTES);
+    // Pre-allocate only a modest amount; the header size is attacker-controlled,
+    // so don't trust it for the initial capacity. `.take` still bounds the read.
+    let cap = entry.size().min(1 << 20);
     let mut buf = Vec::with_capacity(cap as usize);
     entry
         .take(MAX_ENTRY_BYTES)

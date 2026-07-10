@@ -83,10 +83,18 @@ impl PlayClient {
 fn map_ureq_error(err: ureq::Error) -> MetadataError {
     match err {
         ureq::Error::Status(code, response) => {
+            // Publisher errors use `error.message`; the OAuth token endpoint uses
+            // `error_description` / a string `error`. Try each.
             let detail = response
                 .into_json::<Value>()
                 .ok()
-                .and_then(|v| v["error"]["message"].as_str().map(str::to_string))
+                .and_then(|v| {
+                    v["error"]["message"]
+                        .as_str()
+                        .or_else(|| v["error_description"].as_str())
+                        .or_else(|| v["error"].as_str())
+                        .map(str::to_string)
+                })
                 .unwrap_or_else(|| "no detail".to_string());
             MetadataError::Api {
                 status: code,

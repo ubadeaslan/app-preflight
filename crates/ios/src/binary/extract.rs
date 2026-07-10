@@ -37,7 +37,7 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     // framework-bundled `.xcprivacy` (SDKs ship their own) must NOT satisfy this
     // — that would mask a missing app-level manifest.
     let app_privacy = format!("{app_dir}PrivacyInfo.xcprivacy");
-    let has_privacy_manifest = names.iter().any(|n| *n == app_privacy);
+    let has_privacy_manifest = names.contains(&app_privacy);
 
     let mut snap = BinarySnapshot {
         app_name: app_base_name(&app_dir),
@@ -171,7 +171,9 @@ fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec
     let entry = archive
         .by_name(name)
         .map_err(|e| BinaryError::Zip(e.to_string()))?;
-    let cap = entry.size().min(MAX_ENTRY_BYTES);
+    // Pre-allocate only a modest amount; the header size is attacker-controlled.
+    // `.take` still bounds the actual read.
+    let cap = entry.size().min(1 << 20);
     let mut buf = Vec::with_capacity(cap as usize);
     entry
         .take(MAX_ENTRY_BYTES)

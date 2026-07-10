@@ -25,7 +25,17 @@ const META: CheckMeta = CheckMeta {
 };
 
 /// Substrings that betray a placeholder left in by mistake.
-const PLACEHOLDERS: &[&str] = &["todo", "tbd", "test", "asdf", "lorem", "xxx", "placeholder"];
+/// Placeholder tokens, matched on word boundaries so `test` doesn't fire on
+/// `latest`/`fastest`/`contest` and `tbd` doesn't fire inside real words.
+const PLACEHOLDERS: &[&str] = &["todo", "tbd", "asdf", "lorem", "placeholder", "foobar"];
+
+/// True if any placeholder token appears as a whole word in `text` (lowercased).
+fn has_placeholder_word(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    lower
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .any(|word| PLACEHOLDERS.contains(&word))
+}
 
 impl IosCheck for UsageDescriptionsCheck {
     fn meta(&self) -> CheckMeta {
@@ -52,10 +62,7 @@ impl IosCheck for UsageDescriptionsCheck {
                     Severity::Warning,
                     format!("`{key}` purpose string is very short (\"{text}\"). Reviewers expect a specific, user-facing reason."),
                 ))
-            } else if PLACEHOLDERS
-                .iter()
-                .any(|p| text.to_ascii_lowercase().contains(p))
-            {
+            } else if has_placeholder_word(text) {
                 Some((
                     Severity::Warning,
                     format!("`{key}` purpose string looks like a placeholder (\"{text}\")."),

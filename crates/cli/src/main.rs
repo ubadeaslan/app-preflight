@@ -216,10 +216,29 @@ fn run_binary_check(path: &std::path::Path, args: &CheckArgs) -> Result<ExitCode
         }
     };
 
-    let mut config =
-        Config::load_from_dir(path.parent().unwrap_or(path)).map_err(anyhow::Error::msg)?;
+    let parent = path.parent().unwrap_or(path);
+    let mut config = Config::load_from_dir(parent).map_err(anyhow::Error::msg)?;
     if let Some(level) = args.fail_on {
         config.fail_on = Some(level.into());
+    }
+
+    // Honor the baseline flags for artifact scans too (findings have no file
+    // locations, so entries are keyed by check id + message).
+    let mut findings = findings;
+    if args.write_baseline {
+        let report = Report::build(findings, &config);
+        let bpath = args
+            .baseline
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(baseline::DEFAULT_PATH));
+        let n = baseline::write(&bpath, &report.findings, parent)?;
+        eprintln!("Wrote {n} finding(s) to baseline {}", bpath.display());
+        return Ok(ExitCode::SUCCESS);
+    }
+    if let Some(bpath) = &args.baseline {
+        if bpath.exists() {
+            baseline::suppress(bpath, &mut findings, parent)?;
+        }
     }
 
     let report = Report::build(findings, &config);
@@ -260,10 +279,13 @@ fn warn_unknown_config_ids(config: &Config) {
 }
 
 /// On Windows, `canonicalize` returns a `\\?\C:\...` verbatim path that looks
-/// noisy in reports. Strip the prefix for display and downstream walking.
+/// noisy in reports. Strip the prefix for display and downstream walking, while
+/// keeping UNC paths (`\\?\UNC\server\share` → `\\server\share`) valid.
 fn strip_verbatim(path: PathBuf) -> PathBuf {
     let s = path.to_string_lossy();
-    if let Some(rest) = s.strip_prefix(r"\\?\") {
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{rest}"))
+    } else if let Some(rest) = s.strip_prefix(r"\\?\") {
         PathBuf::from(rest)
     } else {
         path

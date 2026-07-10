@@ -21,12 +21,13 @@ const META: CheckMeta = CheckMeta {
     docs_url: Some("https://developer.apple.com/support/offering-account-deletion-in-your-app/"),
 };
 
-/// Signals the app creates accounts.
+/// Signals the app creates accounts. Kept specific to auth APIs — a bare
+/// `register(` matched ubiquitous UIKit calls like `tableView.register(...)`.
 const SIGNUP_SIGNALS: &[&str] = &[
     "createUser",
     "signUp",
-    "register(",
     "createAccount",
+    "registerUser",
     "SignInWithApple",
     "ASAuthorizationController",
 ];

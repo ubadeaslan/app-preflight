@@ -162,7 +162,7 @@ const DESCRIPTION_META: CheckMeta = CheckMeta {
     category: Category::Metadata,
     default_severity: Severity::Warning,
     confidence: Confidence::Medium,
-    guideline: Some("2.3.7"),
+    guideline: Some("2.3"),
     docs_url: Some("https://developer.apple.com/app-store/review/guidelines/#accurate-metadata"),
 };
 
@@ -183,7 +183,7 @@ impl MetadataCheck for DescriptionQuality {
                     )
                     .severity(Severity::Error),
                 );
-            } else if desc.len() < 30 || PLACEHOLDERS.iter().any(|p| lower.contains(p)) {
+            } else if desc.chars().count() < 30 || PLACEHOLDERS.iter().any(|p| lower.contains(p)) {
                 findings.push(Finding::from_meta(
                     &DESCRIPTION_META,
                     format!(
