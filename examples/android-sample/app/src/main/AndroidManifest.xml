@@ -4,10 +4,12 @@
 
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:label="MyApp"
         android:debuggable="true"
         android:usesCleartextTraffic="true">
+        <service android:name=".SyncService" />
     </application>
 </manifest>

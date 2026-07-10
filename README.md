@@ -73,7 +73,9 @@ preflight rules                 # list every check preflight knows about
 | `IOS-PRIVACY-002` | iOS | Empty / placeholder / too-short permission purpose strings |
 | `IOS-CONFIG-001`  | iOS | Missing `ITSAppUsesNonExemptEncryption` (export-compliance prompt every build) |
 | `IOS-CONFIG-002`  | iOS | Missing version string / placeholder bundle identifier |
+| `IOS-CONFIG-003`  | iOS | App Transport Security disabled in `Info.plist` (2.5.1) |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
+| `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
 | `IOS-META-002`    | iOS | Missing support URL (1.5) |
 | `IOS-META-003`    | iOS | Demo account required but no credentials provided (2.1) |
@@ -89,6 +91,7 @@ preflight rules                 # list every check preflight knows about
 | `ANDROID-CONFIG-001` | Android | `android:debuggable="true"` in the manifest |
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
+| `ANDROID-CONFIG-004` | Android | Foreground service without a `foregroundServiceType` (Android 14) |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 | `ANDROID-META-001`   | Android | Missing / too-short full description |
 | `ANDROID-META-002`   | Android | Title (>30) or short description (>80) missing or over limit |

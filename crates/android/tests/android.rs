@@ -15,6 +15,7 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"ANDROID-CONFIG-002")); // targetSdk 30 < 34
     assert!(ids.contains(&"ANDROID-CONFIG-003")); // cleartext
     assert!(ids.contains(&"ANDROID-PRIVACY-001")); // READ_SMS + fine location
+    assert!(ids.contains(&"ANDROID-CONFIG-004")); // FGS without foregroundServiceType
 }
 
 #[test]

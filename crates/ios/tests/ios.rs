@@ -25,6 +25,10 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"IOS-CONFIG-002"));
     // Sign-up without deletion path.
     assert!(ids.contains(&"IOS-LEGAL-001"));
+    // App Transport Security disabled in Info.plist.
+    assert!(ids.contains(&"IOS-CONFIG-003"));
+    // Social login without Sign in with Apple.
+    assert!(ids.contains(&"IOS-LEGAL-002"));
 }
 
 #[test]

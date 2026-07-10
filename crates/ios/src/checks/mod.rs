@@ -4,8 +4,10 @@
 use crate::IosCheck;
 
 mod account_deletion;
+mod ats;
 mod encryption;
 mod privacy_manifest;
+mod sign_in_with_apple;
 mod usage_descriptions;
 mod versioning;
 
@@ -17,5 +19,7 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(encryption::EncryptionDeclarationCheck),
         Box::new(versioning::VersioningCheck),
         Box::new(account_deletion::AccountDeletionCheck),
+        Box::new(ats::AtsArbitraryLoadsCheck),
+        Box::new(sign_in_with_apple::SignInWithAppleCheck),
     ]
 }
