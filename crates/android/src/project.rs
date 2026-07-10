@@ -1,5 +1,6 @@
 //! Locating and reading an Android project on disk.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -17,12 +18,16 @@ pub struct AndroidProject {
     pub manifest_xml: Option<String>,
     /// Concatenated text of module-level Gradle build scripts.
     pub gradle_text: String,
+    /// Contents of `res/xml/*.xml` resources, keyed by file stem (for resolving
+    /// `@xml/...` references such as a network security config).
+    pub res_xml: HashMap<String, String>,
 }
 
 impl AndroidProject {
     pub fn load(root: &Path) -> Option<Self> {
         let mut manifests: Vec<PathBuf> = Vec::new();
         let mut gradle_files: Vec<PathBuf> = Vec::new();
+        let mut res_xml: HashMap<String, String> = HashMap::new();
         let mut has_marker = false;
 
         for entry in WalkDir::new(root)
@@ -45,6 +50,14 @@ impl AndroidProject {
                     gradle_files.push(path.to_path_buf());
                 }
                 "settings.gradle" | "settings.gradle.kts" => has_marker = true,
+                _ if is_res_xml(path) => {
+                    if let (Some(stem), Ok(text)) = (
+                        path.file_stem().and_then(|s| s.to_str()),
+                        std::fs::read_to_string(path),
+                    ) {
+                        res_xml.insert(stem.to_string(), text);
+                    }
+                }
                 _ => {}
             }
         }
@@ -71,6 +84,7 @@ impl AndroidProject {
             manifest_path,
             manifest_xml,
             gradle_text,
+            res_xml,
         })
     }
 
@@ -79,6 +93,27 @@ impl AndroidProject {
         let xml = self.manifest_xml.as_deref()?;
         roxmltree::Document::parse(xml).ok()
     }
+
+    /// The network-security-config XML referenced by the manifest's
+    /// `android:networkSecurityConfig` attribute, resolved from `res/xml/`.
+    pub fn network_security_config(&self) -> Option<&str> {
+        let doc = self.manifest_doc()?;
+        let app = doc.descendants().find(|n| n.has_tag_name("application"))?;
+        let reference = android_attr(app, "networkSecurityConfig")?;
+        // e.g. "@xml/network_security_config" -> "network_security_config".
+        let stem = reference.rsplit('/').next().unwrap_or(reference);
+        self.res_xml.get(stem).map(String::as_str)
+    }
+}
+
+/// A file under a `res/xml/` (or any `/xml/`) directory ending in `.xml`.
+fn is_res_xml(path: &Path) -> bool {
+    path.extension().and_then(|e| e.to_str()) == Some("xml")
+        && path
+            .parent()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            == Some("xml")
 }
 
 /// Read the value of an `android:`-namespaced attribute by local name.

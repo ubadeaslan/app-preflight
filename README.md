@@ -96,6 +96,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-PRIVACY-004` | iOS | Background location without an Always usage description |
 | `IOS-CONFIG-005`  | iOS | `aps-environment` set to `development` in entitlements |
 | `IOS-CONFIG-006`  | iOS | `get-task-allow` enabled (debuggable entitlement) |
+| `IOS-CONFIG-007`  | iOS | Insecure ATS exception domain (`NSExceptionDomains`) |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
 | `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
@@ -115,6 +116,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
 | `ANDROID-CONFIG-004` | Android | Foreground service without a `foregroundServiceType` (Android 14) |
 | `ANDROID-CONFIG-005` | Android | Component with intent-filter missing `android:exported` (Android 12) |
+| `ANDROID-CONFIG-006` | Android | Network security config permits cleartext traffic |
 | `ANDROID-PRIVACY-002`| Android | Special permission needing a Play declaration (e.g. All files access) |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 | `ANDROID-META-001`   | Android | Missing / too-short full description |

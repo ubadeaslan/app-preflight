@@ -34,6 +34,8 @@ fn detects_known_issues_in_sample() {
     // Entitlements: development push env + debuggable get-task-allow.
     assert!(ids.contains(&"IOS-CONFIG-005"));
     assert!(ids.contains(&"IOS-CONFIG-006"));
+    // Insecure ATS exception domain.
+    assert!(ids.contains(&"IOS-CONFIG-007"));
 }
 
 #[test]

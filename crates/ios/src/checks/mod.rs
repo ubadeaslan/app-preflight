@@ -5,6 +5,7 @@ use crate::IosCheck;
 
 mod account_deletion;
 mod ats;
+mod ats_exceptions;
 mod encryption;
 mod entitlements;
 mod location;
@@ -27,5 +28,6 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(location::DeprecatedLocationKeyCheck),
         Box::new(entitlements::ApsEnvironmentCheck),
         Box::new(entitlements::GetTaskAllowCheck),
+        Box::new(ats_exceptions::AtsExceptionDomainsCheck),
     ]
 }

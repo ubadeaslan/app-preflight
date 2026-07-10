@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 43 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 45 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (23)
+## iOS (24)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -18,6 +18,7 @@ app-preflight ships 43 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-004` | warning | configuration | 5.1.1 | Legacy location key without the combined authorization key |
 | `IOS-CONFIG-005` | warning | configuration |  | aps-environment set to development |
 | `IOS-CONFIG-006` | error | configuration | 2.5.1 | get-task-allow enabled (debuggable entitlement) |
+| `IOS-CONFIG-007` | warning | configuration | 2.5.1 | Insecure App Transport Security exception domain |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
@@ -30,7 +31,7 @@ app-preflight ships 43 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 
-## Android (20)
+## Android (21)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -43,6 +44,7 @@ app-preflight ships 43 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-CONFIG-003` | warning | configuration | Play: User Data | Cleartext network traffic is permitted |
 | `ANDROID-CONFIG-004` | warning | configuration | Android 14: Foreground service types | Foreground service without a foregroundServiceType |
 | `ANDROID-CONFIG-005` | error | configuration | Android 12: explicit exported | Component with intent-filter missing android:exported |
+| `ANDROID-CONFIG-006` | warning | configuration | Play: User Data | Network security config permits cleartext traffic |
 | `ANDROID-DEX-001` | warning | binary | Play: Device and Network Abuse | Dynamic code loading (DexClassLoader) |
 | `ANDROID-DEX-002` | warning | binary |  | Hard-coded secret in the compiled code |
 | `ANDROID-DEX-003` | warning | binary | Play: non-SDK interface restrictions | Restricted / non-SDK (hidden) API reference |

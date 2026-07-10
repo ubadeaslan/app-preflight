@@ -6,6 +6,7 @@ mod cleartext;
 mod debuggable;
 mod exported;
 mod foreground_service;
+mod network_security_config;
 mod sensitive_permissions;
 mod special_permissions;
 mod target_sdk;
@@ -19,5 +20,6 @@ pub fn registry() -> Vec<Box<dyn AndroidCheck>> {
         Box::new(foreground_service::ForegroundServiceTypeCheck),
         Box::new(exported::ExportedComponentCheck),
         Box::new(special_permissions::SpecialPermissionsCheck),
+        Box::new(network_security_config::NetworkSecurityConfigCheck),
     ]
 }
