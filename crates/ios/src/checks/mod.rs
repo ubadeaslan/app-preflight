@@ -6,6 +6,7 @@ use crate::IosCheck;
 mod account_deletion;
 mod ats;
 mod encryption;
+mod entitlements;
 mod location;
 mod privacy_manifest;
 mod sign_in_with_apple;
@@ -24,5 +25,7 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(sign_in_with_apple::SignInWithAppleCheck),
         Box::new(location::BackgroundLocationCheck),
         Box::new(location::DeprecatedLocationKeyCheck),
+        Box::new(entitlements::ApsEnvironmentCheck),
+        Box::new(entitlements::GetTaskAllowCheck),
     ]
 }

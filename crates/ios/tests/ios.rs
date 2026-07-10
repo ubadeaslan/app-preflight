@@ -31,6 +31,9 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"IOS-LEGAL-002"));
     // Legacy Always location key without the combined key.
     assert!(ids.contains(&"IOS-CONFIG-004"));
+    // Entitlements: development push env + debuggable get-task-allow.
+    assert!(ids.contains(&"IOS-CONFIG-005"));
+    assert!(ids.contains(&"IOS-CONFIG-006"));
 }
 
 #[test]

@@ -94,6 +94,8 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-CONFIG-003`  | iOS | App Transport Security disabled in `Info.plist` (2.5.1) |
 | `IOS-CONFIG-004`  | iOS | Legacy `NSLocationAlwaysUsageDescription` without the combined key |
 | `IOS-PRIVACY-004` | iOS | Background location without an Always usage description |
+| `IOS-CONFIG-005`  | iOS | `aps-environment` set to `development` in entitlements |
+| `IOS-CONFIG-006`  | iOS | `get-task-allow` enabled (debuggable entitlement) |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
 | `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |

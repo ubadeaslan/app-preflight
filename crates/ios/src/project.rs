@@ -24,7 +24,12 @@ pub struct IosProject {
     pub info_plist: Option<plist::Dictionary>,
     /// All `*.xcprivacy` privacy manifests discovered.
     pub privacy_manifests: Vec<PathBuf>,
-    pub entitlements: Vec<PathBuf>,
+    /// All `*.entitlements` files discovered.
+    pub entitlement_files: Vec<PathBuf>,
+    /// The primary `*.entitlements` file (app target), if one was found.
+    pub entitlements_path: Option<PathBuf>,
+    /// The parsed primary entitlements plist.
+    pub entitlements: Option<plist::Dictionary>,
     /// First-party source files (`.swift`, `.m`, `.mm`) for content heuristics.
     pub source_files: Vec<PathBuf>,
 }
@@ -34,7 +39,7 @@ impl IosProject {
         let mut has_project_marker = false;
         let mut info_plists: Vec<PathBuf> = Vec::new();
         let mut privacy_manifests = Vec::new();
-        let mut entitlements = Vec::new();
+        let mut entitlement_files: Vec<PathBuf> = Vec::new();
         let mut source_files = Vec::new();
 
         for entry in WalkDir::new(root)
@@ -62,7 +67,7 @@ impl IosProject {
             } else if name.ends_with(".xcprivacy") {
                 privacy_manifests.push(path.to_path_buf());
             } else if name.ends_with(".entitlements") {
-                entitlements.push(path.to_path_buf());
+                entitlement_files.push(path.to_path_buf());
             } else if name.ends_with(".swift") || name.ends_with(".m") || name.ends_with(".mm") {
                 source_files.push(path.to_path_buf());
             }
@@ -72,8 +77,14 @@ impl IosProject {
             return None;
         }
 
-        let info_plist_path = pick_primary_info_plist(&info_plists);
+        let info_plist_path = pick_primary(&info_plists);
         let info_plist = info_plist_path
+            .as_deref()
+            .and_then(|p| plist::Value::from_file(p).ok())
+            .and_then(|v| v.into_dictionary());
+
+        let entitlements_path = pick_primary(&entitlement_files);
+        let entitlements = entitlements_path
             .as_deref()
             .and_then(|p| plist::Value::from_file(p).ok())
             .and_then(|v| v.into_dictionary());
@@ -83,9 +94,16 @@ impl IosProject {
             info_plist_path,
             info_plist,
             privacy_manifests,
+            entitlement_files,
+            entitlements_path,
             entitlements,
             source_files,
         })
+    }
+
+    /// Read a top-level value from the primary entitlements plist.
+    pub fn entitlement(&self, key: &str) -> Option<&plist::Value> {
+        self.entitlements.as_ref()?.get(key)
     }
 
     /// Read a top-level string value from the primary `Info.plist`.
@@ -114,9 +132,9 @@ fn is_pruned(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Prefer an `Info.plist` that belongs to the app target: not under a test
-/// directory, shallowest in the tree.
-fn pick_primary_info_plist(candidates: &[PathBuf]) -> Option<PathBuf> {
+/// Prefer a file that belongs to the app target: not under a test directory,
+/// shallowest in the tree.
+fn pick_primary(candidates: &[PathBuf]) -> Option<PathBuf> {
     candidates
         .iter()
         .filter(|p| !path_looks_like_tests(p))
