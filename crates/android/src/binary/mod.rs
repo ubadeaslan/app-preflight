@@ -270,13 +270,21 @@ fn is_dex_name(name: &str) -> bool {
     name.starts_with("classes") && name.ends_with(".dex") && !name.contains('/')
 }
 
+/// Cap on bytes read from one archive entry, to bound memory against a corrupt
+/// or malicious APK (e.g. a zip bomb reporting a huge uncompressed size).
+const MAX_ENTRY_BYTES: u64 = 512 * 1024 * 1024;
+
 fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec<u8>, BinaryError> {
     use std::io::Read;
-    let mut entry = archive
+    let entry = archive
         .by_name(name)
         .map_err(|e| BinaryError::Zip(e.to_string()))?;
-    let mut buf = Vec::with_capacity(entry.size() as usize);
-    entry.read_to_end(&mut buf).map_err(BinaryError::Io)?;
+    let cap = entry.size().min(MAX_ENTRY_BYTES);
+    let mut buf = Vec::with_capacity(cap as usize);
+    entry
+        .take(MAX_ENTRY_BYTES)
+        .read_to_end(&mut buf)
+        .map_err(BinaryError::Io)?;
     Ok(buf)
 }
 

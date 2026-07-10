@@ -31,10 +31,14 @@ impl Report {
         if let Some(min) = config.min_severity {
             findings.retain(|f| f.severity >= min);
         }
+        // Fully deterministic order: severity desc, then id, then location, then
+        // message. Stability matters for baselines and SARIF/JSON diffs.
         findings.sort_by(|a, b| {
             b.severity
                 .cmp(&a.severity)
                 .then_with(|| a.check_id.cmp(&b.check_id))
+                .then_with(|| location_key(a).cmp(&location_key(b)))
+                .then_with(|| a.message.cmp(&b.message))
         });
 
         let mut summary = Summary::default();
@@ -57,6 +61,17 @@ impl Report {
 
     pub fn is_empty(&self) -> bool {
         self.findings.is_empty()
+    }
+}
+
+/// A sortable key for a finding's location (file then line), for stable ordering.
+fn location_key(f: &Finding) -> (String, u32) {
+    match &f.location {
+        Some(loc) => (
+            loc.file.to_string_lossy().into_owned(),
+            loc.line.unwrap_or(0),
+        ),
+        None => (String::new(), 0),
     }
 }
 

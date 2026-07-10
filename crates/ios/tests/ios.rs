@@ -58,6 +58,18 @@ fn background_location_without_any_always_key_is_flagged() {
 }
 
 #[test]
+fn malformed_info_plist_does_not_panic() {
+    let dir = std::env::temp_dir().join(format!("preflight_badplist_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&dir);
+    std::fs::write(dir.join("Info.plist"), b"<<< not a plist >>>").unwrap();
+    // It's still detected as an iOS project (Info.plist present); checks that read
+    // the plist must simply find nothing rather than panic.
+    let result = preflight_ios::analyze(&dir, &Config::default());
+    let _ = std::fs::remove_dir_all(&dir);
+    assert!(result.is_some());
+}
+
+#[test]
 fn returns_none_for_non_ios_dir() {
     // The Android sample has Gradle files but no iOS markers.
     let android = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/android-sample");

@@ -212,6 +212,28 @@ fn run_binary_check(path: &std::path::Path, args: &CheckArgs) -> Result<ExitCode
     })
 }
 
+/// Warn (on stderr) when `preflight.toml` references a check id that doesn't
+/// exist — usually a typo that would otherwise be silently ignored.
+fn warn_unknown_config_ids(config: &Config) {
+    let mut known = std::collections::HashSet::new();
+    for m in preflight_ios::all_check_meta() {
+        known.insert(m.id);
+    }
+    for m in preflight_android::all_check_meta() {
+        known.insert(m.id);
+    }
+    let referenced = config
+        .disabled_checks
+        .iter()
+        .chain(config.severity.keys())
+        .map(String::as_str);
+    for id in referenced {
+        if !known.contains(id) {
+            eprintln!("warning: preflight.toml references unknown check id `{id}`");
+        }
+    }
+}
+
 /// On Windows, `canonicalize` returns a `\\?\C:\...` verbatim path that looks
 /// noisy in reports. Strip the prefix for display and downstream walking.
 fn strip_verbatim(path: PathBuf) -> PathBuf {
@@ -239,6 +261,7 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
     if let Some(level) = args.fail_on {
         config.fail_on = Some(level.into());
     }
+    warn_unknown_config_ids(&config);
 
     let mut raw = Vec::new();
     let mut ios_present = false;

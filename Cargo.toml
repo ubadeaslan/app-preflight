@@ -24,6 +24,7 @@ jsonwebtoken = "9"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 goblin = "0.8"
 axmldecoder = "0.3"
+memchr = "2"
 
 preflight-core = { path = "crates/core" }
 preflight-ios = { path = "crates/ios" }

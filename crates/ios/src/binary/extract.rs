@@ -120,19 +120,24 @@ fn app_base_name(app_dir: &str) -> String {
         .to_string()
 }
 
+/// Cap on how many bytes we read from a single archive entry, so a malicious or
+/// corrupt IPA (e.g. a zip bomb reporting a huge size) can't exhaust memory.
+const MAX_ENTRY_BYTES: u64 = 512 * 1024 * 1024;
+
 fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec<u8>, BinaryError> {
-    let mut entry = archive
+    let entry = archive
         .by_name(name)
         .map_err(|e| BinaryError::Zip(e.to_string()))?;
-    let mut buf = Vec::with_capacity(entry.size() as usize);
-    entry.read_to_end(&mut buf).map_err(BinaryError::Io)?;
+    let cap = entry.size().min(MAX_ENTRY_BYTES);
+    let mut buf = Vec::with_capacity(cap as usize);
+    entry
+        .take(MAX_ENTRY_BYTES)
+        .read_to_end(&mut buf)
+        .map_err(BinaryError::Io)?;
     Ok(buf)
 }
 
-/// True if `haystack` contains the byte sequence `needle`.
+/// True if `haystack` contains the byte sequence `needle` (fast, via memchr).
 fn contains(haystack: &[u8], needle: &[u8]) -> bool {
-    if needle.is_empty() || haystack.len() < needle.len() {
-        return false;
-    }
-    haystack.windows(needle.len()).any(|w| w == needle)
+    memchr::memmem::find(haystack, needle).is_some()
 }

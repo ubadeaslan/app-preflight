@@ -53,23 +53,13 @@ fn is_google_key_char(c: u8) -> bool {
 
 /// True if `prefix` occurs followed by exactly `len` bytes all satisfying `pred`.
 fn find_token(haystack: &[u8], prefix: &[u8], len: usize, pred: impl Fn(u8) -> bool) -> bool {
-    if haystack.len() < prefix.len() + len {
-        return false;
-    }
-    haystack
-        .windows(prefix.len())
-        .enumerate()
-        .filter(|(_, w)| *w == prefix)
-        .any(|(i, _)| {
-            let start = i + prefix.len();
-            let end = start + len;
-            end <= haystack.len() && haystack[start..end].iter().all(|&b| pred(b))
-        })
+    memchr::memmem::find_iter(haystack, prefix).any(|i| {
+        let start = i + prefix.len();
+        let end = start + len;
+        end <= haystack.len() && haystack[start..end].iter().all(|&b| pred(b))
+    })
 }
 
 fn contains(haystack: &[u8], needle: &[u8]) -> bool {
-    if needle.is_empty() || haystack.len() < needle.len() {
-        return false;
-    }
-    haystack.windows(needle.len()).any(|w| w == needle)
+    memchr::memmem::find(haystack, needle).is_some()
 }

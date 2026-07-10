@@ -16,6 +16,7 @@ ureq = { workspace = true }
 jsonwebtoken = { workspace = true }
 zip = { workspace = true }
 axmldecoder = { workspace = true }
+memchr = { workspace = true }
 
 [dev-dependencies]
 jsonwebtoken = { workspace = true }

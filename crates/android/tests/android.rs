@@ -6,6 +6,20 @@ fn sample() -> PathBuf {
 }
 
 #[test]
+fn malformed_manifest_does_not_panic() {
+    let dir = std::env::temp_dir().join(format!("preflight_badmanifest_{}", std::process::id()));
+    let main = dir.join("app/src/main");
+    let _ = std::fs::create_dir_all(&main);
+    std::fs::write(dir.join("build.gradle"), b"android {}").unwrap();
+    std::fs::write(main.join("AndroidManifest.xml"), b"<<< not xml >>>").unwrap();
+    let result = preflight_android::analyze(&dir, &Config::default());
+    let _ = std::fs::remove_dir_all(&dir);
+    // Detected as an Android project (has build.gradle); manifest-based checks
+    // simply produce nothing rather than panic.
+    assert!(result.is_some());
+}
+
+#[test]
 fn detects_known_issues_in_sample() {
     let findings = preflight_android::analyze(&sample(), &Config::default())
         .expect("android project detected");

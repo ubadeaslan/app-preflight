@@ -51,6 +51,30 @@ fn no_finding_when_64bit_present() {
 }
 
 #[test]
+fn garbage_manifest_and_dex_do_not_panic() {
+    // Non-AXML manifest and random DEX bytes must decode to nothing, not panic.
+    let path = write_apk_with(
+        "garbage",
+        &[
+            ("AndroidManifest.xml", "not binary axml"),
+            ("classes.dex", "random bytes not a real dex"),
+        ],
+    );
+    let findings = preflight_android::analyze_binary(&path).expect("no panic");
+    let _ = std::fs::remove_file(&path);
+    assert!(findings.is_empty());
+}
+
+#[test]
+fn corrupt_archive_errors_without_panicking() {
+    let path = std::env::temp_dir().join(format!("preflight_corrupt_{}.apk", std::process::id()));
+    std::fs::write(&path, b"not a zip").unwrap();
+    let result = preflight_android::analyze_binary(&path);
+    let _ = std::fs::remove_file(&path);
+    assert!(result.is_err());
+}
+
+#[test]
 fn no_native_libs_is_fine() {
     // Pure-Java/Kotlin apps have no lib/ entries and are unaffected.
     let path = write_apk("nolibs", &["classes.dex", "AndroidManifest.xml"]);

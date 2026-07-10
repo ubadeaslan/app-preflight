@@ -104,6 +104,30 @@ fn missing_path_exits_two() {
 }
 
 #[test]
+fn empty_dir_reports_no_project_and_exits_two() {
+    let dir = std::env::temp_dir().join(format!("preflight_empty_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&dir);
+    preflight()
+        .args(["check", dir.to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("No iOS or Android project"));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn unsupported_file_extension_exits_two() {
+    let file = std::env::temp_dir().join(format!("preflight_x_{}.txt", std::process::id()));
+    std::fs::write(&file, b"hi").unwrap();
+    preflight()
+        .args(["check", file.to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("Unsupported file"));
+    let _ = std::fs::remove_file(&file);
+}
+
+#[test]
 fn fail_on_error_passes_when_only_warnings() {
     // Raising the fail threshold to error on a project with warnings but treating
     // everything as info via min-severity is out of scope; here we just confirm

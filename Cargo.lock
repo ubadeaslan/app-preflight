@@ -704,6 +704,7 @@ version = "0.1.0"
 dependencies = [
  "axmldecoder",
  "jsonwebtoken",
+ "memchr",
  "preflight-core",
  "roxmltree",
  "serde",
@@ -743,6 +744,7 @@ version = "0.1.0"
 dependencies = [
  "goblin",
  "jsonwebtoken",
+ "memchr",
  "plist",
  "preflight-core",
  "serde",

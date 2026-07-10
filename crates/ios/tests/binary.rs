@@ -97,6 +97,32 @@ fn non_ipa_archive_errors() {
 }
 
 #[test]
+fn garbage_info_plist_does_not_panic() {
+    // A bundle whose Info.plist isn't a plist at all must not panic; extraction
+    // falls back to the app base name for the executable.
+    let path = write_ipa(
+        "garbageplist",
+        &[
+            ("Payload/Demo.app/Info.plist", b"this is not a plist"),
+            ("Payload/Demo.app/Demo", b"UIWebView"),
+        ],
+    );
+    let findings = preflight_ios::analyze_binary(&path).expect("no panic");
+    let _ = std::fs::remove_file(&path);
+    let ids: Vec<&str> = findings.iter().map(|f| f.check_id.as_str()).collect();
+    assert!(ids.contains(&"IOS-BIN-001")); // still finds UIWebView in the exec
+}
+
+#[test]
+fn corrupt_archive_errors_without_panicking() {
+    let path = std::env::temp_dir().join(format!("preflight_corrupt_{}.ipa", std::process::id()));
+    std::fs::write(&path, b"definitely not a zip file").unwrap();
+    let result = preflight_ios::analyze_binary(&path);
+    let _ = std::fs::remove_file(&path);
+    assert!(result.is_err());
+}
+
+#[test]
 fn checks_run_on_a_snapshot() {
     let snap = BinarySnapshot {
         app_name: "Demo".into(),
