@@ -15,6 +15,7 @@ serde_json = { workspace = true }
 ureq = { workspace = true }
 jsonwebtoken = { workspace = true }
 zip = { workspace = true }
+axmldecoder = { workspace = true }
 
 [dev-dependencies]
 jsonwebtoken = { workspace = true }

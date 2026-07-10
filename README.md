@@ -95,6 +95,9 @@ preflight rules                 # list every check preflight knows about
 | `ANDROID-META-005`   | Android | Missing high-res app icon on the listing |
 | `ANDROID-META-006`   | Android | No contact details on the store listing |
 | `ANDROID-BIN-001`    | Android | APK ships 32-bit native libs but no 64-bit ABI |
+| `ANDROID-BIN-002`    | Android | Compiled (merged) manifest is `debuggable` |
+| `ANDROID-BIN-003`    | Android | Compiled manifest `targetSdk` below Play minimum |
+| `ANDROID-BIN-004`    | Android | Compiled manifest permits cleartext traffic |
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);
@@ -113,7 +116,10 @@ preflight check ./app/release/app-release.apk
 For iOS this unzips the IPA and inspects the Mach-O for `UIWebView` usage,
 private-framework linkage, embedded debug endpoints, and a bundled privacy
 manifest. For Android it checks the APK's native ABIs for the Google Play 64-bit
-requirement. (DEX/AXML decoding is a future addition.)
+requirement and decodes the compiled (binary AXML) `AndroidManifest.xml` to
+verify the *merged, shipped* manifest isn't debuggable, meets the target-SDK
+minimum, and doesn't permit cleartext traffic. (DEX method-level scanning is a
+future addition.)
 
 ## App Store Connect metadata scanning
 
