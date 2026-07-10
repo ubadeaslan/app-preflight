@@ -89,6 +89,12 @@ fn gradle_application_id(gradle: &str) -> Option<String> {
         if !line.starts_with("applicationId") {
             continue;
         }
+        // Exclude `applicationIdSuffix` — the next char after the keyword must not
+        // be an identifier char.
+        let after = &line["applicationId".len()..];
+        if after.chars().next().is_some_and(|c| c.is_alphanumeric()) {
+            continue;
+        }
         if let Some(start) = line.find(['"', '\'']) {
             let rest = &line[start + 1..];
             if let Some(end) = rest.find(['"', '\'']) {

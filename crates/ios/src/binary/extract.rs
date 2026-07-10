@@ -33,9 +33,11 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
         .find_map(|n| app_dir_of(n))
         .ok_or(BinaryError::NotAnIpa)?;
 
-    let has_privacy_manifest = names
-        .iter()
-        .any(|n| n.starts_with(&app_dir) && n.ends_with(".xcprivacy"));
+    // The app target's own privacy manifest lives at the bundle root. A
+    // framework-bundled `.xcprivacy` (SDKs ship their own) must NOT satisfy this
+    // — that would mask a missing app-level manifest.
+    let app_privacy = format!("{app_dir}PrivacyInfo.xcprivacy");
+    let has_privacy_manifest = names.iter().any(|n| *n == app_privacy);
 
     let mut snap = BinarySnapshot {
         app_name: app_base_name(&app_dir),

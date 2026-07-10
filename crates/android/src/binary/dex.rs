@@ -15,7 +15,11 @@ pub struct DexFacts {
     pub restricted_apis: Vec<String>,
 }
 
-const DEX_CLASS_LOADER: &str = "Ldalvik/system/DexClassLoader;";
+/// Descriptors that load executable code at runtime (dynamic code loading).
+const DYNAMIC_LOADERS: &[&str] = &[
+    "Ldalvik/system/DexClassLoader;",
+    "Ldalvik/system/InMemoryDexClassLoader;",
+];
 
 /// Non-SDK / hidden API classes apps commonly reach via reflection. An exact
 /// match or the `Lcom/android/internal/` prefix is flagged.
@@ -31,8 +35,18 @@ const RESTRICTED_PREFIX: &str = "Lcom/android/internal/";
 /// Parse `bytes` and accumulate findings into `facts`.
 pub fn scan(bytes: &[u8], facts: &mut DexFacts) {
     match parse(bytes) {
-        Some(dex) => scan_parsed(&dex, facts),
-        None => scan_raw(bytes, facts),
+        Some(dex) => {
+            scan_parsed(&dex, facts);
+            // A valid header with an empty/unreadable type table would miss all
+            // class-descriptor signals — supplement with a raw class scan.
+            if dex.types.is_empty() {
+                scan_raw_classes(bytes, facts);
+            }
+        }
+        None => {
+            scan_raw_classes(bytes, facts);
+            detect_secret(&String::from_utf8_lossy(bytes), facts);
+        }
     }
 }
 
@@ -42,12 +56,15 @@ struct DexContents {
 }
 
 fn scan_parsed(dex: &DexContents, facts: &mut DexFacts) {
-    if dex.types.iter().any(|t| t == DEX_CLASS_LOADER) {
+    if dex
+        .types
+        .iter()
+        .any(|t| DYNAMIC_LOADERS.contains(&t.as_str()))
+    {
         facts.dynamic_code_loading = true;
     }
     for t in &dex.types {
-        let hit = RESTRICTED_TYPES.contains(&t.as_str()) || t.starts_with(RESTRICTED_PREFIX);
-        if hit && !facts.restricted_apis.contains(t) {
+        if is_restricted(t) && !facts.restricted_apis.contains(t) {
             facts.restricted_apis.push(t.clone());
         }
     }
@@ -56,13 +73,26 @@ fn scan_parsed(dex: &DexContents, facts: &mut DexFacts) {
     }
 }
 
-/// Fallback when the DEX header can't be parsed: scan raw bytes.
-fn scan_raw(bytes: &[u8], facts: &mut DexFacts) {
-    if memchr::memmem::find(bytes, DEX_CLASS_LOADER.as_bytes()).is_some() {
+fn is_restricted(t: &str) -> bool {
+    RESTRICTED_TYPES.contains(&t) || t.starts_with(RESTRICTED_PREFIX)
+}
+
+/// Raw byte scan for class descriptors — the fallback path that covers packed /
+/// header-corrupt DEX where the parsed type table is unavailable.
+fn scan_raw_classes(bytes: &[u8], facts: &mut DexFacts) {
+    if DYNAMIC_LOADERS
+        .iter()
+        .any(|d| memchr::memmem::find(bytes, d.as_bytes()).is_some())
+    {
         facts.dynamic_code_loading = true;
     }
-    // Secret detection over the whole blob.
-    detect_secret(&String::from_utf8_lossy(bytes), facts);
+    for t in RESTRICTED_TYPES {
+        if memchr::memmem::find(bytes, t.as_bytes()).is_some()
+            && !facts.restricted_apis.iter().any(|r| r == t)
+        {
+            facts.restricted_apis.push((*t).to_string());
+        }
+    }
 }
 
 fn detect_secret(s: &str, facts: &mut DexFacts) {

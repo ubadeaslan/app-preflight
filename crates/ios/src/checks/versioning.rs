@@ -59,6 +59,22 @@ impl IosCheck for VersioningCheck {
             );
         }
 
+        let build_version = project.info_string("CFBundleVersion");
+        if build_version.map(str::trim).unwrap_or("").is_empty()
+            && !is_build_variable(build_version)
+        {
+            findings.push(
+                Finding::from_meta(
+                    &META,
+                    "`CFBundleVersion` (build number) is missing or empty. App Store Connect \
+                     rejects uploads without a build number.",
+                )
+                .severity(Severity::Error)
+                .location(loc())
+                .remediation("Set CFBundleVersion, e.g. `1`."),
+            );
+        }
+
         if let Some(bundle_id) = project.info_string("CFBundleIdentifier") {
             let lower = bundle_id.to_ascii_lowercase();
             if PLACEHOLDER_BUNDLE_FRAGMENTS

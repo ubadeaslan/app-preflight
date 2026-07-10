@@ -106,14 +106,16 @@ impl AndroidProject {
     }
 }
 
-/// A file under a `res/xml/` (or any `/xml/`) directory ending in `.xml`.
+/// A file ending in `.xml` under a resource `xml/` directory — including
+/// qualified variants like `xml-v24/` where a network-security-config often lives.
 fn is_res_xml(path: &Path) -> bool {
     path.extension().and_then(|e| e.to_str()) == Some("xml")
         && path
             .parent()
             .and_then(|p| p.file_name())
             .and_then(|n| n.to_str())
-            == Some("xml")
+            .map(|n| n == "xml" || n.starts_with("xml-"))
+            .unwrap_or(false)
 }
 
 /// Read the value of an `android:`-namespaced attribute by local name.

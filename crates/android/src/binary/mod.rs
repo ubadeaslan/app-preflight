@@ -37,12 +37,15 @@ pub struct BinarySnapshot {
     pub dex: DexFacts,
 }
 
+/// ABIs that satisfy Google Play's 64-bit requirement.
+const KNOWN_64BIT: &[&str] = &["arm64-v8a", "x86_64", "riscv64"];
+
 impl BinarySnapshot {
-    fn has_32bit(&self) -> bool {
-        self.abis.iter().any(|a| a == "armeabi-v7a" || a == "x86")
-    }
-    fn has_64bit(&self) -> bool {
-        self.abis.iter().any(|a| a == "arm64-v8a" || a == "x86_64")
+    /// True when the APK ships native libraries but none for a 64-bit ABI. Any
+    /// ABI not in [`KNOWN_64BIT`] (armeabi, armeabi-v7a, x86, mips, …) counts as
+    /// 32-bit, so an armeabi-only APK is correctly flagged.
+    fn missing_64bit(&self) -> bool {
+        !self.abis.is_empty() && !self.abis.iter().any(|a| KNOWN_64BIT.contains(&a.as_str()))
     }
 }
 
@@ -56,7 +59,7 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     // ANDROID-BIN-001 — 64-bit requirement.
-    if snapshot.has_32bit() && !snapshot.has_64bit() {
+    if snapshot.missing_64bit() {
         findings.push(
             Finding::from_meta(
                 &SIXTYFOUR_BIT_META,
