@@ -141,3 +141,41 @@ fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Result<Vec
 fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     memchr::memmem::find(haystack, needle).is_some()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn xorshift(state: &mut u64) -> u64 {
+        let mut x = *state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        *state = x;
+        x
+    }
+
+    /// Mach-O / fat magics, so `goblin` runs its parser against garbage.
+    const MAGICS: &[[u8; 4]] = &[
+        [0xCF, 0xFA, 0xED, 0xFE], // MH_MAGIC_64 (little-endian)
+        [0xFE, 0xED, 0xFA, 0xCF],
+        [0xCA, 0xFE, 0xBA, 0xBE], // FAT_MAGIC
+    ];
+
+    #[test]
+    fn fuzz_scan_executable_never_panics() {
+        let mut state = 0xDEAD_BEEF_CAFE_F00Du64;
+        for _ in 0..3000 {
+            let len = (xorshift(&mut state) % 8192) as usize;
+            let mut buf: Vec<u8> = (0..len)
+                .map(|_| (xorshift(&mut state) & 0xff) as u8)
+                .collect();
+            if len >= 4 {
+                let magic = MAGICS[(xorshift(&mut state) as usize) % MAGICS.len()];
+                buf[0..4].copy_from_slice(&magic);
+            }
+            let mut snap = BinarySnapshot::default();
+            scan_executable(&buf, &mut snap); // must not panic
+        }
+    }
+}

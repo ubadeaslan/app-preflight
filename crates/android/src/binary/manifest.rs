@@ -18,8 +18,13 @@ pub struct ManifestFacts {
 
 /// Decode the binary `AndroidManifest.xml` bytes, or `None` if it can't be read.
 pub fn decode(bytes: &[u8]) -> Option<ManifestFacts> {
-    let doc = axmldecoder::parse(&mut std::io::Cursor::new(bytes)).ok()?;
-    let root = doc.get_root().as_ref()?;
+    // The AXML decoder can panic on some malformed inputs; contain it so a bad
+    // manifest in a user's APK never crashes preflight.
+    let parsed =
+        std::panic::catch_unwind(|| axmldecoder::parse(&mut std::io::Cursor::new(bytes)).ok())
+            .ok()
+            .flatten()?;
+    let root = parsed.get_root().as_ref()?;
     let mut facts = ManifestFacts::default();
     walk(root, &mut facts);
     Some(facts)
@@ -63,4 +68,32 @@ fn attr(el: &Element, local: &str) -> Option<String> {
         .iter()
         .find(|(k, _)| k.as_str() == local || k.ends_with(&suffix))
         .map(|(_, v)| v.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn xorshift(state: &mut u64) -> u64 {
+        let mut x = *state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        *state = x;
+        x
+    }
+
+    #[test]
+    fn fuzz_decode_never_panics() {
+        // The panic guard in `decode` must contain any decoder panic; a bad
+        // manifest yields None, never a crash.
+        let mut state = 0x1234_5678_9ABC_DEF0u64;
+        for _ in 0..3000 {
+            let len = (xorshift(&mut state) % 4096) as usize;
+            let buf: Vec<u8> = (0..len)
+                .map(|_| (xorshift(&mut state) & 0xff) as u8)
+                .collect();
+            let _ = decode(&buf);
+        }
+    }
 }

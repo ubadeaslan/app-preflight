@@ -217,4 +217,31 @@ mod tests {
         assert!(facts.dynamic_code_loading);
         assert!(facts.secret_kinds.iter().any(|k| k == "Google API key"));
     }
+
+    fn xorshift(state: &mut u64) -> u64 {
+        let mut x = *state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        *state = x;
+        x
+    }
+
+    #[test]
+    fn fuzz_parser_never_panics() {
+        let mut state = 0x9E37_79B9_7F4A_7C15u64;
+        for _ in 0..4000 {
+            let len = (xorshift(&mut state) % 8192) as usize;
+            let mut buf: Vec<u8> = (0..len)
+                .map(|_| (xorshift(&mut state) & 0xff) as u8)
+                .collect();
+            // Half the time, stamp the DEX magic so the header parser runs against
+            // garbage sizes/offsets.
+            if len >= 8 && xorshift(&mut state) & 1 == 0 {
+                buf[0..8].copy_from_slice(b"dex\n035\0");
+            }
+            let mut facts = DexFacts::default();
+            scan(&buf, &mut facts); // must not panic
+        }
+    }
 }
