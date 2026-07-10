@@ -19,6 +19,8 @@ walkdir = "2"
 plist = "1"
 roxmltree = "0.20"
 clap = { version = "4", features = ["derive"] }
+ureq = { version = "2", features = ["json"] }
+jsonwebtoken = "9"
 
 preflight-core = { path = "crates/core" }
 preflight-ios = { path = "crates/ios" }

@@ -40,6 +40,10 @@ struct CheckArgs {
     /// Exit non-zero at this severity or above (overrides preflight.toml).
     #[arg(long, value_enum)]
     fail_on: Option<Level>,
+
+    /// Skip the App Store Connect metadata scan even if credentials are set.
+    #[arg(long)]
+    skip_metadata: bool,
 }
 
 #[derive(Args)]
@@ -91,6 +95,38 @@ fn main() -> ExitCode {
     }
 }
 
+/// Run the optional App Store Connect metadata scan and fold its findings into
+/// `raw`. Failures are surfaced as warnings on stderr rather than aborting the
+/// whole check — a flaky network shouldn't block the source-scan results.
+fn run_metadata_scan(
+    root: &std::path::Path,
+    config: &Config,
+    ios_present: bool,
+    raw: &mut Vec<preflight_core::Finding>,
+) {
+    use preflight_ios::MetadataScan;
+    match preflight_ios::analyze_metadata(root, config) {
+        MetadataScan::Done(findings) => raw.extend(findings),
+        MetadataScan::Failed(msg) => {
+            eprintln!("warning: App Store Connect metadata scan failed: {msg}");
+        }
+        MetadataScan::NoBundleId => {
+            eprintln!(
+                "warning: App Store Connect credentials are set but no concrete bundle id was \
+                 found. Set ASC_BUNDLE_ID to enable metadata checks."
+            );
+        }
+        MetadataScan::Skipped => {
+            if ios_present {
+                eprintln!(
+                    "hint: set ASC_ISSUER_ID, ASC_KEY_ID and ASC_PRIVATE_KEY(_PATH) to also \
+                     check your App Store listing (privacy policy, demo account, screenshots)."
+                );
+            }
+        }
+    }
+}
+
 /// On Windows, `canonicalize` returns a `\\?\C:\...` verbatim path that looks
 /// noisy in reports. Strip the prefix for display and downstream walking.
 fn strip_verbatim(path: PathBuf) -> PathBuf {
@@ -116,9 +152,11 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
 
     let mut raw = Vec::new();
     let mut scanned_any = false;
+    let mut ios_present = false;
 
     if let Some(findings) = preflight_ios::analyze(&root, &config) {
         scanned_any = true;
+        ios_present = true;
         raw.extend(findings);
     }
     if let Some(findings) = preflight_android::analyze(&root, &config) {
@@ -133,6 +171,10 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
             root.display()
         );
         return Ok(ExitCode::from(2));
+    }
+
+    if !args.skip_metadata {
+        run_metadata_scan(&root, &config, ios_present, &mut raw);
     }
 
     let report = Report::build(raw, &config);

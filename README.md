@@ -74,14 +74,45 @@ preflight rules                 # list every check preflight knows about
 | `IOS-CONFIG-001`  | iOS | Missing `ITSAppUsesNonExemptEncryption` (export-compliance prompt every build) |
 | `IOS-CONFIG-002`  | iOS | Missing version string / placeholder bundle identifier |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
+| `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
+| `IOS-META-002`    | iOS | Missing support URL (1.5) |
+| `IOS-META-003`    | iOS | Demo account required but no credentials provided (2.1) |
+| `IOS-META-004`    | iOS | Empty / placeholder app description (2.3.7) |
+| `IOS-META-005`    | iOS | No iPhone screenshots uploaded (2.3.3) |
+| `IOS-META-006`    | iOS | Keyword list over the 100-character limit |
 | `ANDROID-CONFIG-001` | Android | `android:debuggable="true"` in the manifest |
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 
-Run `preflight rules` for the live list. The roadmap adds **store-metadata**
-checks (via the App Store Connect / Play Developer APIs) and **compiled-binary**
-checks (private-API usage and embedded strings inside an `.ipa` / `.apk`).
+The `IOS-META-*` checks talk to the App Store Connect API and only run when
+credentials are configured (see below); everything else is offline. Run
+`preflight rules` for the live list. The roadmap adds **Play metadata** checks
+(via the Play Developer API) and **compiled-binary** checks (private-API usage
+and embedded strings inside an `.ipa` / `.apk`).
+
+## App Store Connect metadata scanning
+
+`preflight` can also check your live store listing — privacy policy, support
+URL, demo account, screenshots, description — by calling the App Store Connect
+API. It authenticates with an API key you create under **App Store Connect >
+Users and Access > Integrations > App Store Connect API**, signing a short-lived
+ES256 JWT on each request. Credentials come from the environment so no secret
+touches the repo:
+
+```sh
+export ASC_ISSUER_ID="your-issuer-id"
+export ASC_KEY_ID="your-key-id"
+export ASC_PRIVATE_KEY_PATH="/path/to/AuthKey_XXXX.p8"   # or ASC_PRIVATE_KEY with the contents inline
+# Optional: override the bundle id (otherwise read from Info.plist)
+export ASC_BUNDLE_ID="com.yourcompany.app"
+
+preflight check .
+```
+
+If these aren't set, metadata checks are silently skipped — the rest of the scan
+still runs. Use `--skip-metadata` to force-skip them even when configured (e.g.
+in an offline CI job).
 
 ## Configuration
 

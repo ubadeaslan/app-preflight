@@ -6,6 +6,7 @@
 //! nothing else.
 
 pub mod checks;
+pub mod metadata;
 mod project;
 
 pub use project::IosProject;
@@ -35,7 +36,52 @@ pub fn analyze(root: &Path, config: &Config) -> Option<Vec<Finding>> {
     Some(findings)
 }
 
-/// Metadata for every registered iOS check — used by `preflight rules`.
+/// Metadata for every registered iOS check (source-scan + App Store Connect
+/// metadata) — used by `preflight rules`.
 pub fn all_check_meta() -> Vec<CheckMeta> {
-    checks::registry().iter().map(|c| c.meta()).collect()
+    let mut metas: Vec<CheckMeta> = checks::registry().iter().map(|c| c.meta()).collect();
+    metas.extend(metadata::all_check_meta());
+    metas
+}
+
+/// Outcome of the optional App Store Connect metadata scan.
+pub enum MetadataScan {
+    /// No credentials configured (`ASC_*` env vars); scanning was skipped.
+    Skipped,
+    /// Credentials are present but no concrete bundle id could be determined.
+    NoBundleId,
+    /// Credentials present but the fetch failed (network, auth, no such app).
+    Failed(String),
+    /// Completed; carries the findings.
+    Done(Vec<Finding>),
+}
+
+/// Run the App Store Connect metadata scan, if it is configured.
+///
+/// The bundle id comes from `ASC_BUNDLE_ID` when set, otherwise from the
+/// project's `Info.plist` (skipped when that value is a build-setting variable).
+pub fn analyze_metadata(root: &Path, _config: &Config) -> MetadataScan {
+    let Some(creds) = metadata::AscCredentials::from_env() else {
+        return MetadataScan::Skipped;
+    };
+    let bundle_id = creds.bundle_id.clone().or_else(|| detect_bundle_id(root));
+    let Some(bundle_id) = bundle_id else {
+        return MetadataScan::NoBundleId;
+    };
+    match metadata::analyze(&creds, &bundle_id) {
+        Ok(findings) => MetadataScan::Done(findings),
+        Err(e) => MetadataScan::Failed(e.to_string()),
+    }
+}
+
+/// The concrete bundle identifier from the project, or `None` if it is missing
+/// or expressed as an Xcode build variable like `$(PRODUCT_BUNDLE_IDENTIFIER)`.
+fn detect_bundle_id(root: &Path) -> Option<String> {
+    let project = IosProject::load(root)?;
+    let bundle_id = project.info_string("CFBundleIdentifier")?;
+    if bundle_id.contains("$(") {
+        None
+    } else {
+        Some(bundle_id.to_string())
+    }
 }
