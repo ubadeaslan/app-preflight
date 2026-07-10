@@ -29,6 +29,32 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"IOS-CONFIG-003"));
     // Social login without Sign in with Apple.
     assert!(ids.contains(&"IOS-LEGAL-002"));
+    // Legacy Always location key without the combined key.
+    assert!(ids.contains(&"IOS-CONFIG-004"));
+}
+
+#[test]
+fn background_location_without_any_always_key_is_flagged() {
+    // A project that requests background location but sets no location usage
+    // key at all triggers IOS-PRIVACY-004 (and not the legacy-key IOS-CONFIG-004).
+    let dir = std::env::temp_dir().join(format!("preflight_bgloc_{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&dir);
+    std::fs::write(
+        dir.join("Info.plist"),
+        r#"<?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.acme.app</string>
+<key>UIBackgroundModes</key><array><string>location</string></array>
+</dict></plist>"#,
+    )
+    .unwrap();
+
+    let findings = preflight_ios::analyze(&dir, &Config::default()).expect("ios project");
+    let ids = ids(&findings);
+    let _ = std::fs::remove_dir_all(&dir);
+
+    assert!(ids.contains(&"IOS-PRIVACY-004"));
+    assert!(!ids.contains(&"IOS-CONFIG-004"));
 }
 
 #[test]

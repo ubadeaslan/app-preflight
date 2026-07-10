@@ -85,6 +85,8 @@ preflight rules                 # list every check preflight knows about
 | `IOS-CONFIG-001`  | iOS | Missing `ITSAppUsesNonExemptEncryption` (export-compliance prompt every build) |
 | `IOS-CONFIG-002`  | iOS | Missing version string / placeholder bundle identifier |
 | `IOS-CONFIG-003`  | iOS | App Transport Security disabled in `Info.plist` (2.5.1) |
+| `IOS-CONFIG-004`  | iOS | Legacy `NSLocationAlwaysUsageDescription` without the combined key |
+| `IOS-PRIVACY-004` | iOS | Background location without an Always usage description |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
 | `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
@@ -103,6 +105,8 @@ preflight rules                 # list every check preflight knows about
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
 | `ANDROID-CONFIG-004` | Android | Foreground service without a `foregroundServiceType` (Android 14) |
+| `ANDROID-CONFIG-005` | Android | Component with intent-filter missing `android:exported` (Android 12) |
+| `ANDROID-PRIVACY-002`| Android | Special permission needing a Play declaration (e.g. All files access) |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 | `ANDROID-META-001`   | Android | Missing / too-short full description |
 | `ANDROID-META-002`   | Android | Title (>30) or short description (>80) missing or over limit |

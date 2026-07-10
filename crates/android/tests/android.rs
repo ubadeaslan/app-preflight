@@ -16,6 +16,8 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"ANDROID-CONFIG-003")); // cleartext
     assert!(ids.contains(&"ANDROID-PRIVACY-001")); // READ_SMS + fine location
     assert!(ids.contains(&"ANDROID-CONFIG-004")); // FGS without foregroundServiceType
+    assert!(ids.contains(&"ANDROID-CONFIG-005")); // activity intent-filter w/o exported
+    assert!(ids.contains(&"ANDROID-PRIVACY-002")); // MANAGE_EXTERNAL_STORAGE
 }
 
 #[test]
