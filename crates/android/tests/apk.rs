@@ -106,6 +106,7 @@ fn dex_facts_drive_checks() {
         dex: DexFacts {
             dynamic_code_loading: true,
             secret_kinds: vec!["Google API key".into()],
+            ..Default::default()
         },
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();

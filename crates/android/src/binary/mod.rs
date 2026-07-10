@@ -1,10 +1,11 @@
 //! Compiled `.apk` inspection.
 //!
-//! An APK is a ZIP. We read three things without a full DEX parser:
+//! An APK is a ZIP. We read three things:
 //! - the native ABIs under `lib/<abi>/` (Google Play's 64-bit requirement),
 //! - the compiled `AndroidManifest.xml`, decoded from binary AXML into
 //!   [`manifest::ManifestFacts`] (the merged, ground-truth manifest), and
-//! - byte-level signals from `classes*.dex` ([`dex::DexFacts`]).
+//! - signals from `classes*.dex` ([`dex::DexFacts`]), parsed from the DEX string
+//!   pool and type-id table.
 //!
 //! Extraction is separated from checks so the check logic is unit-testable on a
 //! hand-built [`BinarySnapshot`].
@@ -144,6 +145,25 @@ pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
         );
     }
 
+    // ANDROID-DEX-003 — restricted / non-SDK (hidden) API references.
+    if !snapshot.dex.restricted_apis.is_empty() {
+        let mut shown = snapshot.dex.restricted_apis.clone();
+        shown.sort();
+        shown.truncate(5);
+        findings.push(
+            Finding::from_meta(
+                &RESTRICTED_API_META,
+                format!(
+                    "The DEX references restricted / non-SDK (hidden) API class(es): {}. Google \
+                     restricts non-SDK interfaces; they can break across Android versions and \
+                     draw policy attention.",
+                    shown.join(", ")
+                ),
+            )
+            .remediation("Replace hidden-API usage with public SDK APIs (or an official Jetpack)."),
+        );
+    }
+
     findings
 }
 
@@ -155,6 +175,7 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
         CLEARTEXT_META,
         DYNAMIC_CODE_META,
         SECRETS_META,
+        RESTRICTED_API_META,
     ]
 }
 
@@ -178,6 +199,19 @@ const SECRETS_META: CheckMeta = CheckMeta {
     confidence: Confidence::Medium,
     guideline: None,
     docs_url: Some("https://developer.android.com/privacy-and-security/security-tips"),
+};
+
+const RESTRICTED_API_META: CheckMeta = CheckMeta {
+    id: "ANDROID-DEX-003",
+    title: "Restricted / non-SDK (hidden) API reference",
+    platform: Platform::Android,
+    category: Category::Binary,
+    default_severity: Severity::Warning,
+    confidence: Confidence::Low,
+    guideline: Some("Play: non-SDK interface restrictions"),
+    docs_url: Some(
+        "https://developer.android.com/guide/app-compatibility/restrictions-non-sdk-interfaces",
+    ),
 };
 
 const SIXTYFOUR_BIT_META: CheckMeta = CheckMeta {

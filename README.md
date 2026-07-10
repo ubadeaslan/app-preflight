@@ -127,6 +127,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-BIN-004`    | Android | Compiled manifest permits cleartext traffic |
 | `ANDROID-DEX-001`    | Android | Dynamic code loading (`DexClassLoader`) in `classes*.dex` |
 | `ANDROID-DEX-002`    | Android | Hard-coded secret (API key / AWS key / PEM) in the DEX |
+| `ANDROID-DEX-003`    | Android | Restricted / non-SDK (hidden) API class referenced in the DEX |
 
 The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
 Google Play APIs and only run when credentials are configured (see below);
@@ -147,9 +148,9 @@ private-framework linkage, embedded debug endpoints, and a bundled privacy
 manifest. For Android it checks the APK's native ABIs for the Google Play 64-bit
 requirement, decodes the compiled (binary AXML) `AndroidManifest.xml` to verify
 the *merged, shipped* manifest isn't debuggable, meets the target-SDK minimum,
-and doesn't permit cleartext traffic, and byte-scans `classes*.dex` for dynamic
-code loading and hard-coded secrets. (Full DEX method-graph analysis is a future
-addition.)
+and doesn't permit cleartext traffic, and parses `classes*.dex` (string pool +
+type-id table) to flag dynamic code loading, hard-coded secrets, and references
+to restricted / non-SDK (hidden) APIs.
 
 ## App Store Connect metadata scanning
 
