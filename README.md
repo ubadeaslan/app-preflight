@@ -152,7 +152,7 @@ Google Play APIs and only run when credentials are configured (see below);
 everything else is offline. Run `preflight rules` for the live list, or see
 [CHECKS.md](CHECKS.md) for the full generated catalog.
 
-## Scanning a compiled `.ipa` / `.apk`
+## Scanning a compiled `.ipa` / `.apk` / `.aab`
 
 Point `check` at a built artifact instead of a directory to inspect the compiled
 binary — things you can only see post-build:
@@ -160,7 +160,13 @@ binary — things you can only see post-build:
 ```sh
 preflight check ./build/MyApp.ipa
 preflight check ./app/release/app-release.apk
+preflight check ./app/release/app-release.aab   # Android App Bundle
 ```
+
+An `.aab` uses a protobuf manifest rather than binary AXML, so bundle scans cover
+the parts that don't need that schema: native ABIs, 16 KB alignment, DEX signals,
+and permissions. Manifest booleans/ints (debuggable, targetSdk, cleartext) are
+better checked from the `.apk` or the source project.
 
 For iOS this unzips the IPA and inspects the Mach-O for `UIWebView` usage,
 private-framework linkage, embedded debug endpoints, and a bundled privacy

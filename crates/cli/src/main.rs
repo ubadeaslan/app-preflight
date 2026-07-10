@@ -41,8 +41,8 @@ struct ExplainArgs {
 
 #[derive(Args)]
 struct CheckArgs {
-    /// Project directory, or a compiled .ipa / .apk file (defaults to the
-    /// current directory).
+    /// Project directory, or a compiled .ipa / .apk / .aab file (defaults to
+    /// the current directory).
     #[arg(default_value = ".")]
     path: PathBuf,
 
@@ -207,9 +207,10 @@ fn run_binary_check(path: &std::path::Path, args: &CheckArgs) -> Result<ExitCode
     let findings = match ext.as_str() {
         "ipa" => preflight_ios::analyze_binary(path)?,
         "apk" => preflight_android::analyze_binary(path)?,
+        "aab" => preflight_android::analyze_bundle(path)?,
         _ => {
             eprintln!(
-                "Unsupported file '{}'. Pass a project directory, or an .ipa / .apk file.",
+                "Unsupported file '{}'. Pass a project directory, or an .ipa / .apk / .aab file.",
                 path.display()
             );
             return Ok(ExitCode::from(2));

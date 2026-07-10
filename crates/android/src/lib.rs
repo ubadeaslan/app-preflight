@@ -48,6 +48,11 @@ pub fn analyze_binary(path: &Path) -> Result<Vec<Finding>, binary::BinaryError> 
     binary::analyze(path)
 }
 
+/// Analyze an `.aab` (Android App Bundle) file.
+pub fn analyze_bundle(path: &Path) -> Result<Vec<Finding>, binary::BinaryError> {
+    binary::analyze_bundle(path)
+}
+
 /// Run the Google Play metadata scan, if it is configured.
 ///
 /// The package name comes from `GPLAY_PACKAGE_NAME` when set, otherwise from the

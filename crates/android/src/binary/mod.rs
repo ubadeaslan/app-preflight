@@ -58,6 +58,19 @@ pub fn analyze(path: &Path) -> Result<Vec<Finding>, BinaryError> {
     Ok(run_checks(&snapshot))
 }
 
+/// Analyze an `.aab` (Android App Bundle) at `path`.
+///
+/// A bundle is a ZIP with a `base/` (and feature-module) layout and a *protobuf*
+/// manifest (not binary AXML). We cover the parts that are robust without a
+/// protobuf schema: native ABIs, 16 KB alignment, DEX signals, and permissions
+/// (their names are literal strings in the manifest). Manifest booleans/ints
+/// (debuggable/targetSdk/cleartext/testOnly) are release-moot or better checked
+/// from source, so they're left unset for bundles.
+pub fn analyze_bundle(path: &Path) -> Result<Vec<Finding>, BinaryError> {
+    let snapshot = extract_bundle(path)?;
+    Ok(run_checks(&snapshot))
+}
+
 pub fn run_checks(snapshot: &BinarySnapshot) -> Vec<Finding> {
     let mut findings = Vec::new();
 
@@ -446,6 +459,87 @@ fn read_entry_prefix(
 /// `classes.dex`, `classes2.dex`, … at the archive root.
 fn is_dex_name(name: &str) -> bool {
     name.starts_with("classes") && name.ends_with(".dex") && !name.contains('/')
+}
+
+/// Extract a [`BinarySnapshot`] from an `.aab` bundle. Native libs live at
+/// `<module>/lib/<abi>/`, dex at `<module>/dex/`, and the manifest at
+/// `<module>/manifest/AndroidManifest.xml` (protobuf).
+fn extract_bundle(path: &Path) -> Result<BinarySnapshot, BinaryError> {
+    let file = std::fs::File::open(path).map_err(BinaryError::Io)?;
+    let mut archive = ZipArchive::new(file).map_err(|e| BinaryError::Zip(e.to_string()))?;
+
+    let mut abis = BTreeSet::new();
+    let mut dex_names = Vec::new();
+    let mut native_libs_64 = Vec::new();
+    let mut manifest_names = Vec::new();
+    for name in archive.file_names() {
+        if let Some(rest) = name.split_once("/lib/").map(|(_, r)| r) {
+            if let Some((abi, _)) = rest.split_once('/') {
+                if !abi.is_empty() {
+                    abis.insert(abi.to_string());
+                    if KNOWN_64BIT.contains(&abi) && name.ends_with(".so") {
+                        native_libs_64.push(name.to_string());
+                    }
+                }
+            }
+        } else if name.contains("/dex/") && name.ends_with(".dex") {
+            dex_names.push(name.to_string());
+        } else if name.ends_with("/manifest/AndroidManifest.xml") {
+            manifest_names.push(name.to_string());
+        }
+    }
+
+    // Permissions from the protobuf manifest(s): permission names are stored as
+    // literal UTF-8 strings, so a targeted scan is reliable without a schema.
+    let mut permissions: Vec<String> = Vec::new();
+    for name in &manifest_names {
+        if let Ok(bytes) = read_entry(&mut archive, name) {
+            for p in known_permissions() {
+                if memchr::memmem::find(&bytes, p.as_bytes()).is_some() && !permissions.contains(&p)
+                {
+                    permissions.push(p);
+                }
+            }
+        }
+    }
+    let manifest = Some(ManifestFacts {
+        permissions,
+        ..Default::default()
+    });
+
+    let mut dex_facts = DexFacts::default();
+    for name in &dex_names {
+        if let Ok(bytes) = read_entry(&mut archive, name) {
+            dex::scan(&bytes, &mut dex_facts);
+        }
+    }
+
+    let mut unaligned_native_libs = Vec::new();
+    for name in &native_libs_64 {
+        if let Ok(bytes) = read_entry_prefix(&mut archive, name, 256 * 1024) {
+            if elf::is_16k_aligned(&bytes) == Some(false) {
+                unaligned_native_libs.push(name.clone());
+            }
+        }
+    }
+
+    Ok(BinarySnapshot {
+        abis,
+        manifest,
+        dex: dex_facts,
+        unaligned_native_libs,
+    })
+}
+
+/// All permission names we classify (restricted + special + sensitive).
+fn known_permissions() -> Vec<String> {
+    crate::permissions::RESTRICTED
+        .iter()
+        .copied()
+        .chain(crate::permissions::SPECIAL.iter().map(|(p, _)| *p))
+        .chain(crate::permissions::SENSITIVE.iter().copied())
+        .map(str::to_string)
+        .collect()
 }
 
 /// Cap on bytes read from one archive entry, to bound memory against a corrupt

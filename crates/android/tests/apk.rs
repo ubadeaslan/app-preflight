@@ -117,6 +117,48 @@ fn dex_facts_drive_checks() {
 }
 
 #[test]
+fn aab_bundle_checks_libs_dex_and_permissions() {
+    // Craft a fake .aab: base/ layout, an unaligned 64-bit lib, a dex with a
+    // dynamic loader, and a protobuf-ish manifest containing a permission string.
+    let path = std::env::temp_dir().join(format!("preflight_bundle_{}.aab", std::process::id()));
+    let file = std::fs::File::create(&path).unwrap();
+    let mut zw = zip::ZipWriter::new(file);
+    let opts = SimpleFileOptions::default();
+
+    // Minimal 64-bit ELF with a single PT_LOAD at 4 KB (unaligned).
+    let mut so = vec![0u8; 64 + 56];
+    so[0..4].copy_from_slice(b"\x7fELF");
+    so[4] = 2;
+    so[5] = 1;
+    so[0x20..0x28].copy_from_slice(&64u64.to_le_bytes());
+    so[0x36..0x38].copy_from_slice(&56u16.to_le_bytes());
+    so[0x38..0x3a].copy_from_slice(&1u16.to_le_bytes());
+    so[64..68].copy_from_slice(&1u32.to_le_bytes());
+    so[64 + 48..64 + 56].copy_from_slice(&0x1000u64.to_le_bytes());
+    zw.start_file("base/lib/arm64-v8a/libapp.so", opts).unwrap();
+    zw.write_all(&so).unwrap();
+
+    zw.start_file("base/dex/classes.dex", opts).unwrap();
+    zw.write_all(b"junk Ldalvik/system/DexClassLoader; more")
+        .unwrap();
+
+    zw.start_file("base/manifest/AndroidManifest.xml", opts)
+        .unwrap();
+    zw.write_all(b"\x0a\x00 protobuf blob ... android.permission.READ_SMS ...")
+        .unwrap();
+    zw.finish().unwrap();
+
+    let findings = preflight_android::analyze_bundle(&path).expect("analyzes bundle");
+    let _ = std::fs::remove_file(&path);
+    let ids: Vec<&str> = findings.iter().map(|f| f.check_id.as_str()).collect();
+    assert!(ids.contains(&"ANDROID-BIN-006"), "16 KB alignment");
+    assert!(ids.contains(&"ANDROID-DEX-001"), "dynamic code loading");
+    assert!(ids.contains(&"ANDROID-BIN-007"), "restricted permission");
+    // arm64-v8a present -> not flagged as 32-bit-only.
+    assert!(!ids.contains(&"ANDROID-BIN-001"));
+}
+
+#[test]
 fn compiled_manifest_permissions_are_flagged() {
     let snap = BinarySnapshot {
         abis: BTreeSet::from(["arm64-v8a".to_string()]),
