@@ -9,8 +9,10 @@ pub mod check;
 pub mod config;
 pub mod finding;
 pub mod report;
+pub mod scan;
 
 pub use check::{CheckMeta, Confidence};
 pub use config::Config;
 pub use finding::{Category, Finding, Location, Platform, Severity};
 pub use report::Report;
+pub use scan::MetadataScan;

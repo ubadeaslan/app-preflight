@@ -95,33 +95,56 @@ fn main() -> ExitCode {
     }
 }
 
-/// Run the optional App Store Connect metadata scan and fold its findings into
-/// `raw`. Failures are surfaced as warnings on stderr rather than aborting the
-/// whole check — a flaky network shouldn't block the source-scan results.
+/// Run the optional remote metadata scans (App Store Connect + Google Play) and
+/// fold their findings into `raw`. Failures are surfaced as warnings on stderr
+/// rather than aborting — a flaky network shouldn't block source-scan results.
 fn run_metadata_scan(
     root: &std::path::Path,
     config: &Config,
     ios_present: bool,
+    android_present: bool,
     raw: &mut Vec<preflight_core::Finding>,
 ) {
-    use preflight_ios::MetadataScan;
-    match preflight_ios::analyze_metadata(root, config) {
+    handle_scan(
+        preflight_ios::analyze_metadata(root, config),
+        ios_present,
+        "App Store Connect",
+        "no concrete bundle id was found — set ASC_BUNDLE_ID",
+        "set ASC_ISSUER_ID, ASC_KEY_ID and ASC_PRIVATE_KEY(_PATH) to also check your App Store \
+         listing (privacy policy, demo account, screenshots)",
+        raw,
+    );
+    handle_scan(
+        preflight_android::analyze_metadata(root, config),
+        android_present,
+        "Google Play",
+        "no package name was found — set GPLAY_PACKAGE_NAME",
+        "set GOOGLE_APPLICATION_CREDENTIALS (service account JSON) to also check your Play \
+         listing (description, screenshots, feature graphic)",
+        raw,
+    );
+}
+
+/// Fold one platform's [`MetadataScan`] outcome into `raw`, emitting the right
+/// warning or hint on stderr.
+fn handle_scan(
+    scan: preflight_core::MetadataScan,
+    present: bool,
+    label: &str,
+    no_target_hint: &str,
+    skipped_hint: &str,
+    raw: &mut Vec<preflight_core::Finding>,
+) {
+    use preflight_core::MetadataScan;
+    match scan {
         MetadataScan::Done(findings) => raw.extend(findings),
-        MetadataScan::Failed(msg) => {
-            eprintln!("warning: App Store Connect metadata scan failed: {msg}");
-        }
-        MetadataScan::NoBundleId => {
-            eprintln!(
-                "warning: App Store Connect credentials are set but no concrete bundle id was \
-                 found. Set ASC_BUNDLE_ID to enable metadata checks."
-            );
+        MetadataScan::Failed(msg) => eprintln!("warning: {label} metadata scan failed: {msg}"),
+        MetadataScan::NoTarget => {
+            eprintln!("warning: {label} credentials are set but {no_target_hint}.");
         }
         MetadataScan::Skipped => {
-            if ios_present {
-                eprintln!(
-                    "hint: set ASC_ISSUER_ID, ASC_KEY_ID and ASC_PRIVATE_KEY(_PATH) to also \
-                     check your App Store listing (privacy policy, demo account, screenshots)."
-                );
+            if present {
+                eprintln!("hint: {skipped_hint}.");
             }
         }
     }
@@ -151,20 +174,19 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
     }
 
     let mut raw = Vec::new();
-    let mut scanned_any = false;
     let mut ios_present = false;
+    let mut android_present = false;
 
     if let Some(findings) = preflight_ios::analyze(&root, &config) {
-        scanned_any = true;
         ios_present = true;
         raw.extend(findings);
     }
     if let Some(findings) = preflight_android::analyze(&root, &config) {
-        scanned_any = true;
+        android_present = true;
         raw.extend(findings);
     }
 
-    if !scanned_any {
+    if !ios_present && !android_present {
         eprintln!(
             "No iOS or Android project found under {}.\n\
              Point preflight at the folder containing your Xcode project or Gradle build.",
@@ -174,7 +196,7 @@ fn run_check(args: CheckArgs) -> Result<ExitCode> {
     }
 
     if !args.skip_metadata {
-        run_metadata_scan(&root, &config, ios_present, &mut raw);
+        run_metadata_scan(&root, &config, ios_present, android_present, &mut raw);
     }
 
     let report = Report::build(raw, &config);

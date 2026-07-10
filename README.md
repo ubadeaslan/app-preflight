@@ -84,12 +84,18 @@ preflight rules                 # list every check preflight knows about
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
+| `ANDROID-META-001`   | Android | Missing / too-short full description |
+| `ANDROID-META-002`   | Android | Title (>30) or short description (>80) missing or over limit |
+| `ANDROID-META-003`   | Android | Fewer than two phone screenshots |
+| `ANDROID-META-004`   | Android | Missing feature graphic |
+| `ANDROID-META-005`   | Android | Missing high-res app icon on the listing |
+| `ANDROID-META-006`   | Android | No contact details on the store listing |
 
-The `IOS-META-*` checks talk to the App Store Connect API and only run when
-credentials are configured (see below); everything else is offline. Run
-`preflight rules` for the live list. The roadmap adds **Play metadata** checks
-(via the Play Developer API) and **compiled-binary** checks (private-API usage
-and embedded strings inside an `.ipa` / `.apk`).
+The `IOS-META-*` and `ANDROID-META-*` checks talk to the App Store Connect /
+Google Play APIs and only run when credentials are configured (see below);
+everything else is offline. Run `preflight rules` for the live list. The roadmap
+adds **compiled-binary** checks (private-API usage and embedded strings inside an
+`.ipa` / `.apk`).
 
 ## App Store Connect metadata scanning
 
@@ -113,6 +119,24 @@ preflight check .
 If these aren't set, metadata checks are silently skipped — the rest of the scan
 still runs. Use `--skip-metadata` to force-skip them even when configured (e.g.
 in an offline CI job).
+
+## Google Play metadata scanning
+
+Likewise for Google Play, `preflight` can check your store listing —
+description, title/short-description limits, screenshots, feature graphic, icon,
+contact details — through the Android Publisher API. It authenticates with a
+**service account** (Google Cloud) that has been granted access in the Play
+Console, doing the OAuth2 JWT-bearer exchange for you. It opens a *read-only*
+edit and abandons it, so it never changes your app.
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
+# or inline: export GPLAY_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
+# Optional: override the package name (otherwise read from applicationId / manifest)
+export GPLAY_PACKAGE_NAME="com.yourcompany.app"
+
+preflight check .
+```
 
 ## Configuration
 

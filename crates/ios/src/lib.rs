@@ -44,17 +44,7 @@ pub fn all_check_meta() -> Vec<CheckMeta> {
     metas
 }
 
-/// Outcome of the optional App Store Connect metadata scan.
-pub enum MetadataScan {
-    /// No credentials configured (`ASC_*` env vars); scanning was skipped.
-    Skipped,
-    /// Credentials are present but no concrete bundle id could be determined.
-    NoBundleId,
-    /// Credentials present but the fetch failed (network, auth, no such app).
-    Failed(String),
-    /// Completed; carries the findings.
-    Done(Vec<Finding>),
-}
+pub use preflight_core::MetadataScan;
 
 /// Run the App Store Connect metadata scan, if it is configured.
 ///
@@ -66,7 +56,7 @@ pub fn analyze_metadata(root: &Path, _config: &Config) -> MetadataScan {
     };
     let bundle_id = creds.bundle_id.clone().or_else(|| detect_bundle_id(root));
     let Some(bundle_id) = bundle_id else {
-        return MetadataScan::NoBundleId;
+        return MetadataScan::NoTarget;
     };
     match metadata::analyze(&creds, &bundle_id) {
         Ok(findings) => MetadataScan::Done(findings),
