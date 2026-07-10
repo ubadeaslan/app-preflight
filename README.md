@@ -101,6 +101,8 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-CONFIG-006`  | iOS | `get-task-allow` enabled (debuggable entitlement) |
 | `IOS-CONFIG-007`  | iOS | Insecure ATS exception domain (`NSExceptionDomains`) |
 | `IOS-CONFIG-008`  | iOS | `LSApplicationQueriesSchemes` over the 50-entry limit |
+| `IOS-CONFIG-009`  | iOS | Legacy calendar key without the iOS 17 full-access key |
+| `IOS-CONFIG-010`  | iOS | iCloud container in the Development environment |
 | `IOS-LEGAL-001`   | iOS | Account creation with no in-app deletion path (Guideline 5.1.1(v)) |
 | `IOS-LEGAL-002`   | iOS | Third-party/social login without Sign in with Apple (4.8) |
 | `IOS-META-001`    | iOS | Missing privacy policy URL on the store listing (5.1.1) |
@@ -115,6 +117,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-BIN-004`     | iOS | No `PrivacyInfo.xcprivacy` inside the built `.app` |
 | `IOS-BIN-005`     | iOS | IDFA used without an App Tracking Transparency string (5.1.2) |
 | `IOS-BIN-006`     | iOS | App Transport Security disabled (`NSAllowsArbitraryLoads`) |
+| `IOS-BIN-007`     | iOS | Development / ad-hoc provisioning profile (not distribution) |
 | `ANDROID-CONFIG-001` | Android | `android:debuggable="true"` in the manifest |
 | `ANDROID-CONFIG-002` | Android | `targetSdk` below Google Play's current minimum |
 | `ANDROID-CONFIG-003` | Android | Cleartext (HTTP) traffic permitted |
@@ -124,6 +127,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `ANDROID-CONFIG-007` | Android | `android:testOnly="true"` (Play refuses to install) |
 | `ANDROID-CONFIG-008` | Android | Exported `<provider>` without a permission |
 | `ANDROID-PRIVACY-003`| Android | Backup enabled without backup rules |
+| `ANDROID-CONFIG-009` | Android | Deprecated `android:sharedUserId` |
 | `ANDROID-PRIVACY-002`| Android | Special permission needing a Play declaration (e.g. All files access) |
 | `ANDROID-PRIVACY-001`| Android | Sensitive / restricted permissions needing a Play declaration |
 | `ANDROID-META-001`   | Android | Missing / too-short full description |

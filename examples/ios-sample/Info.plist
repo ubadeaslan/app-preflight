@@ -10,6 +10,8 @@
     <string>test</string>
     <key>NSContactsUsageDescription</key>
     <string>We use your contacts to help you find friends already on the app.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>We add your booked sessions to your calendar.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>

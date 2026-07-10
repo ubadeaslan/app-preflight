@@ -36,6 +36,7 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"ANDROID-CONFIG-007")); // testOnly
     assert!(ids.contains(&"ANDROID-CONFIG-008")); // exported provider w/o permission
     assert!(ids.contains(&"ANDROID-PRIVACY-003")); // allowBackup without rules
+    assert!(ids.contains(&"ANDROID-CONFIG-009")); // deprecated sharedUserId
 }
 
 #[test]

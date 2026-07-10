@@ -105,3 +105,48 @@ impl IosCheck for GetTaskAllowCheck {
         vec![finding]
     }
 }
+
+// ---------------------------------------------------------------------------
+
+/// IOS-CONFIG-010 — iCloud container in the Development environment.
+pub struct IcloudEnvironmentCheck;
+
+const ICLOUD_ENV_META: CheckMeta = CheckMeta {
+    id: "IOS-CONFIG-010",
+    title: "iCloud container set to the Development environment",
+    platform: Platform::Ios,
+    category: Category::Configuration,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_icloud-container-environment",
+    ),
+};
+
+impl IosCheck for IcloudEnvironmentCheck {
+    fn meta(&self) -> CheckMeta {
+        ICLOUD_ENV_META
+    }
+
+    fn run(&self, project: &IosProject, _config: &Config) -> Vec<Finding> {
+        let is_dev = project
+            .entitlement("com.apple.developer.icloud-container-environment")
+            .and_then(|v| v.as_string())
+            .map(|s| s.eq_ignore_ascii_case("Development"))
+            .unwrap_or(false);
+        if !is_dev {
+            return Vec::new();
+        }
+        let mut finding = Finding::from_meta(
+            &ICLOUD_ENV_META,
+            "`com.apple.developer.icloud-container-environment` is `Development`. A shipped build \
+             will talk to the development CloudKit environment, not production.",
+        )
+        .remediation("Use `Production` for release builds.");
+        if let Some(l) = location(project) {
+            finding = finding.location(l);
+        }
+        vec![finding]
+    }
+}

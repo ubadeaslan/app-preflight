@@ -44,6 +44,12 @@ fn write_ipa(tag: &str, entries: &[(&str, &[u8])]) -> PathBuf {
 fn flags_uiwebview_private_framework_endpoints_and_missing_manifest() {
     let exec = b"padding UIWebView more /System/Library/PrivateFrameworks/Foo.framework/Foo \
                  and http://localhost:8080 and advertisingIdentifier trailing";
+    // A .mobileprovision is CMS-signed, but our extractor slices the embedded
+    // XML plist; a plain XML plist with those markers is enough for the test.
+    let profile = br#"garbage-cms-header <?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>Entitlements</key><dict><key>get-task-allow</key><true/></dict>
+</dict></plist> garbage-cms-trailer"#;
     let path = write_ipa(
         "broken",
         &[
@@ -52,6 +58,7 @@ fn flags_uiwebview_private_framework_endpoints_and_missing_manifest() {
                 info_plist_ats_disabled("Demo").as_bytes(),
             ),
             ("Payload/Demo.app/Demo", exec),
+            ("Payload/Demo.app/embedded.mobileprovision", profile),
         ],
     );
 
@@ -66,6 +73,7 @@ fn flags_uiwebview_private_framework_endpoints_and_missing_manifest() {
         "IOS-BIN-004", // missing privacy manifest
         "IOS-BIN-005", // IDFA without ATT
         "IOS-BIN-006", // ATS disabled
+        "IOS-BIN-007", // development provisioning profile (get-task-allow)
     ] {
         assert!(ids.contains(&expected), "{expected} not flagged");
     }
@@ -133,10 +141,12 @@ fn checks_run_on_a_snapshot() {
         uses_idfa: true,
         has_tracking_usage_description: false,
         ats_allows_arbitrary_loads: true,
+        provisioning_get_task_allow: true,
+        provisioning_has_devices: false,
     };
-    // All six iOS binary checks should fire.
+    // All seven iOS binary checks should fire.
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
-    assert_eq!(ids.len(), 6);
+    assert_eq!(ids.len(), 7);
 }
 
 #[test]

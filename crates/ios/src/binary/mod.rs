@@ -30,6 +30,11 @@ pub struct BinarySnapshot {
     pub has_tracking_usage_description: bool,
     /// App Transport Security is fully disabled (`NSAllowsArbitraryLoads`).
     pub ats_allows_arbitrary_loads: bool,
+    /// The embedded provisioning profile grants `get-task-allow` (debuggable).
+    pub provisioning_get_task_allow: bool,
+    /// The embedded provisioning profile lists `ProvisionedDevices` (a
+    /// development or ad-hoc profile, not an App Store distribution profile).
+    pub provisioning_has_devices: bool,
 }
 
 /// Analyze an `.ipa` at `path`.

@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 50 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 54 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (25)
+## iOS (28)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -12,6 +12,7 @@ app-preflight ships 50 checks. Regenerate this file with `preflight rules --form
 | `IOS-BIN-004` | warning | privacy | 5.1.1 | No privacy manifest in the app bundle |
 | `IOS-BIN-005` | error | privacy | 5.1.2 | IDFA used without an App Tracking Transparency string |
 | `IOS-BIN-006` | warning | configuration | 2.5.1 | App Transport Security disabled (NSAllowsArbitraryLoads) |
+| `IOS-BIN-007` | warning | binary |  | Development / ad-hoc provisioning profile |
 | `IOS-CONFIG-001` | warning | configuration | Export Compliance | Missing export-compliance encryption declaration |
 | `IOS-CONFIG-002` | warning | configuration |  | Version keys / bundle identifier issues |
 | `IOS-CONFIG-003` | warning | configuration | 2.5.1 | App Transport Security disabled (NSAllowsArbitraryLoads) |
@@ -20,6 +21,8 @@ app-preflight ships 50 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-006` | error | configuration | 2.5.1 | get-task-allow enabled (debuggable entitlement) |
 | `IOS-CONFIG-007` | warning | configuration | 2.5.1 | Insecure App Transport Security exception domain |
 | `IOS-CONFIG-008` | warning | configuration |  | LSApplicationQueriesSchemes exceeds the 50-entry limit |
+| `IOS-CONFIG-009` | warning | configuration |  | Legacy calendar key without the iOS 17 full-access key |
+| `IOS-CONFIG-010` | warning | configuration |  | iCloud container set to the Development environment |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
@@ -32,7 +35,7 @@ app-preflight ships 50 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 
-## Android (25)
+## Android (26)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -49,6 +52,7 @@ app-preflight ships 50 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-CONFIG-006` | warning | configuration | Play: User Data | Network security config permits cleartext traffic |
 | `ANDROID-CONFIG-007` | error | configuration | Play: Upload requirements | Application is marked testOnly |
 | `ANDROID-CONFIG-008` | warning | configuration | Play: User Data | Exported content provider without a permission |
+| `ANDROID-CONFIG-009` | warning | configuration |  | Deprecated android:sharedUserId |
 | `ANDROID-DEX-001` | warning | binary | Play: Device and Network Abuse | Dynamic code loading (DexClassLoader) |
 | `ANDROID-DEX-002` | warning | binary |  | Hard-coded secret in the compiled code |
 | `ANDROID-DEX-003` | warning | binary | Play: non-SDK interface restrictions | Restricted / non-SDK (hidden) API reference |

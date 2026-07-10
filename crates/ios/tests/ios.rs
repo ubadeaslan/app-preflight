@@ -36,6 +36,10 @@ fn detects_known_issues_in_sample() {
     assert!(ids.contains(&"IOS-CONFIG-006"));
     // Insecure ATS exception domain.
     assert!(ids.contains(&"IOS-CONFIG-007"));
+    // Legacy calendar key without the iOS 17 full-access key.
+    assert!(ids.contains(&"IOS-CONFIG-009"));
+    // iCloud container in the Development environment.
+    assert!(ids.contains(&"IOS-CONFIG-010"));
 }
 
 #[test]

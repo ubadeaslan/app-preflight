@@ -16,6 +16,7 @@ pub fn registry() -> Vec<Box<dyn BinaryCheck>> {
         Box::new(EmbeddedPrivacyManifest),
         Box::new(IdfaWithoutTracking),
         Box::new(AtsArbitraryLoads),
+        Box::new(ProvisioningProfile),
     ]
 }
 
@@ -237,5 +238,51 @@ impl BinaryCheck for AtsArbitraryLoads {
             "Remove the global exception and scope any needed HTTP exceptions to specific \
              domains under NSExceptionDomains.",
         )]
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-BIN-007 — Development / ad-hoc provisioning profile, not distribution.
+struct ProvisioningProfile;
+
+const PROVISIONING_META: CheckMeta = CheckMeta {
+    id: "IOS-BIN-007",
+    title: "Development / ad-hoc provisioning profile",
+    platform: Platform::Ios,
+    category: Category::Binary,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/help/account/manage-profiles/create-a-distribution-profile",
+    ),
+};
+
+impl BinaryCheck for ProvisioningProfile {
+    fn meta(&self) -> CheckMeta {
+        PROVISIONING_META
+    }
+    fn run(&self, snap: &BinarySnapshot) -> Vec<Finding> {
+        // `get-task-allow` means a debuggable (dev) build — a hard problem for
+        // the App Store; ProvisionedDevices means development/ad-hoc.
+        if snap.provisioning_get_task_allow {
+            return vec![Finding::from_meta(
+                &PROVISIONING_META,
+                "The embedded provisioning profile grants `get-task-allow` — this is a debuggable \
+                 development build, not an App Store distribution build.",
+            )
+            .severity(Severity::Error)
+            .remediation("Re-sign with an App Store distribution profile before submitting.")];
+        }
+        if snap.provisioning_has_devices {
+            return vec![Finding::from_meta(
+                &PROVISIONING_META,
+                "The embedded provisioning profile lists specific devices, so this is a \
+                 development or ad-hoc build rather than an App Store distribution build.",
+            )
+            .remediation("Re-sign with an App Store distribution profile before submitting.")];
+        }
+        Vec::new()
     }
 }

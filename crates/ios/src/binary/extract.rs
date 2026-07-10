@@ -72,7 +72,41 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
         scan_executable(&bytes, &mut snap);
     }
 
+    // Inspect the embedded provisioning profile, if present.
+    if let Ok(bytes) = read_entry(&mut archive, &format!("{app_dir}embedded.mobileprovision")) {
+        parse_provisioning(&bytes, &mut snap);
+    }
+
     Ok(snap)
+}
+
+/// A `.mobileprovision` is a CMS-signed blob wrapping an XML plist. Slice out the
+/// plist by its `<?xml ... </plist>` markers and read the fields we care about.
+fn parse_provisioning(bytes: &[u8], snap: &mut BinarySnapshot) {
+    let (Some(start), Some(end)) = (
+        memchr::memmem::find(bytes, b"<?xml"),
+        memchr::memmem::find(bytes, b"</plist>"),
+    ) else {
+        return;
+    };
+    let xml = &bytes[start..(end + b"</plist>".len()).min(bytes.len())];
+    let Some(dict) = plist::Value::from_reader(Cursor::new(xml))
+        .ok()
+        .and_then(|v| v.into_dictionary())
+    else {
+        return;
+    };
+    snap.provisioning_has_devices = dict
+        .get("ProvisionedDevices")
+        .and_then(|v| v.as_array())
+        .map(|a| !a.is_empty())
+        .unwrap_or(false);
+    snap.provisioning_get_task_allow = dict
+        .get("Entitlements")
+        .and_then(|v| v.as_dictionary())
+        .and_then(|e| e.get("get-task-allow"))
+        .and_then(|v| v.as_boolean())
+        .unwrap_or(false);
 }
 
 fn scan_executable(bytes: &[u8], snap: &mut BinarySnapshot) {

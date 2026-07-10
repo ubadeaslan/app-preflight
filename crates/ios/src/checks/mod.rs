@@ -8,6 +8,7 @@ mod ats;
 mod ats_exceptions;
 mod encryption;
 mod entitlements;
+mod ios17_permissions;
 mod location;
 mod privacy_manifest;
 mod sign_in_with_apple;
@@ -29,7 +30,9 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(location::DeprecatedLocationKeyCheck),
         Box::new(entitlements::ApsEnvironmentCheck),
         Box::new(entitlements::GetTaskAllowCheck),
+        Box::new(entitlements::IcloudEnvironmentCheck),
         Box::new(ats_exceptions::AtsExceptionDomainsCheck),
         Box::new(url_schemes::QuerySchemesLimitCheck),
+        Box::new(ios17_permissions::CalendarFullAccessCheck),
     ]
 }
