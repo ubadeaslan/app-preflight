@@ -196,7 +196,11 @@ fn fastlane_metadata_limits_and_keyword_subtitle_are_flagged() {
     )
     .unwrap();
     // ko: keyword-list subtitle (the Nokturn case) — also over 30 chars.
-    std::fs::write(ko.join("subtitle.txt"), "dream, diary, sleep, ai art, comics, symbols").unwrap();
+    std::fs::write(
+        ko.join("subtitle.txt"),
+        "dream, diary, sleep, ai art, comics, symbols",
+    )
+    .unwrap();
     // en-US: fine subtitle, oversized promotional text.
     std::fs::write(en.join("subtitle.txt"), "Your dreams, beautifully kept").unwrap();
     std::fs::write(en.join("promotional_text.txt"), "x".repeat(171)).unwrap();

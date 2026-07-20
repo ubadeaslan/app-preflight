@@ -29,8 +29,14 @@ const PRIVATE_FRAMEWORKS_PATH: &str = "/System/Library/PrivateFrameworks/";
 /// deliberately conservative — symbols that unambiguously imply the permission.
 const PERMISSION_APIS: &[(&str, &str)] = &[
     ("PHPhotoLibrary", "NSPhotoLibraryUsageDescription"),
-    ("PHAssetCreationRequest", "NSPhotoLibraryAddUsageDescription"),
-    ("UIImageWriteToSavedPhotosAlbum", "NSPhotoLibraryAddUsageDescription"),
+    (
+        "PHAssetCreationRequest",
+        "NSPhotoLibraryAddUsageDescription",
+    ),
+    (
+        "UIImageWriteToSavedPhotosAlbum",
+        "NSPhotoLibraryAddUsageDescription",
+    ),
     ("SFSpeechRecognizer", "NSSpeechRecognitionUsageDescription"),
     ("AVAudioRecorder", "NSMicrophoneUsageDescription"),
     ("AVCaptureDevice", "NSCameraUsageDescription"),

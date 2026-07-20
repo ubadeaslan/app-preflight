@@ -140,7 +140,10 @@ mod tests {
     #[test]
     fn parses_plain_and_qualified_settings() {
         assert_eq!(
-            setting_value("\t\tIPHONEOS_DEPLOYMENT_TARGET = 13.0;", "IPHONEOS_DEPLOYMENT_TARGET"),
+            setting_value(
+                "\t\tIPHONEOS_DEPLOYMENT_TARGET = 13.0;",
+                "IPHONEOS_DEPLOYMENT_TARGET"
+            ),
             Some("13.0")
         );
         assert_eq!(
@@ -150,6 +153,9 @@ mod tests {
             ),
             Some("iPhone Developer")
         );
-        assert_eq!(setting_value("SWIFT_VERSION = 5.0;", "IPHONEOS_DEPLOYMENT_TARGET"), None);
+        assert_eq!(
+            setting_value("SWIFT_VERSION = 5.0;", "IPHONEOS_DEPLOYMENT_TARGET"),
+            None
+        );
     }
 }
