@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 56 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 62 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (28)
+## iOS (34)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -13,6 +13,8 @@ app-preflight ships 56 checks. Regenerate this file with `preflight rules --form
 | `IOS-BIN-005` | error | privacy | 5.1.2 | IDFA used without an App Tracking Transparency string |
 | `IOS-BIN-006` | warning | configuration | 2.5.1 | App Transport Security disabled (NSAllowsArbitraryLoads) |
 | `IOS-BIN-007` | warning | binary |  | Development / ad-hoc provisioning profile |
+| `IOS-BIN-008` | error | privacy | 5.1.1 / ITMS-90683 | Permission API used without its purpose string |
+| `IOS-BIN-009` | warning | configuration | 2.3.3 | App targets iPad (iPad screenshots and review required) |
 | `IOS-CONFIG-001` | warning | configuration | Export Compliance | Missing export-compliance encryption declaration |
 | `IOS-CONFIG-002` | warning | configuration |  | Version keys / bundle identifier issues |
 | `IOS-CONFIG-003` | warning | configuration | 2.5.1 | App Transport Security disabled (NSAllowsArbitraryLoads) |
@@ -23,6 +25,8 @@ app-preflight ships 56 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-008` | warning | configuration |  | LSApplicationQueriesSchemes exceeds the 50-entry limit |
 | `IOS-CONFIG-009` | warning | configuration |  | Legacy calendar key without the iOS 17 full-access key |
 | `IOS-CONFIG-010` | warning | configuration |  | iCloud container set to the Development environment |
+| `IOS-CONFIG-011` | warning | configuration |  | Inconsistent IPHONEOS_DEPLOYMENT_TARGET values |
+| `IOS-CONFIG-012` | warning | configuration |  | CODE_SIGN_IDENTITY pinned to "iPhone Developer" |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
@@ -34,6 +38,8 @@ app-preflight ships 56 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-001` | warning | privacy | 5.1.1 | Missing privacy manifest (PrivacyInfo.xcprivacy) |
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
+| `IOS-STORE-001` | error | metadata |  | Store metadata text over its character limit |
+| `IOS-STORE-002` | warning | metadata | 2.3.7 | Subtitle reads as a keyword list |
 
 ## Android (28)
 

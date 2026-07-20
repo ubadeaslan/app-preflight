@@ -32,6 +32,10 @@ pub struct IosProject {
     pub entitlements: Option<plist::Dictionary>,
     /// First-party source files (`.swift`, `.m`, `.mm`) for content heuristics.
     pub source_files: Vec<PathBuf>,
+    /// The primary `project.pbxproj` (app project, not pods), if one was found.
+    pub pbxproj_path: Option<PathBuf>,
+    /// Raw text of the primary `project.pbxproj`.
+    pub pbxproj: Option<String>,
 }
 
 impl IosProject {
@@ -41,6 +45,7 @@ impl IosProject {
         let mut privacy_manifests = Vec::new();
         let mut entitlement_files: Vec<PathBuf> = Vec::new();
         let mut source_files = Vec::new();
+        let mut pbxprojs: Vec<PathBuf> = Vec::new();
 
         for entry in WalkDir::new(root)
             .into_iter()
@@ -62,6 +67,8 @@ impl IosProject {
 
             if name == "Info.plist" {
                 info_plists.push(path.to_path_buf());
+            } else if name == "project.pbxproj" {
+                pbxprojs.push(path.to_path_buf());
             } else if name == "Podfile" || name == "Package.swift" {
                 has_project_marker = true;
             } else if name.ends_with(".xcprivacy") {
@@ -89,6 +96,11 @@ impl IosProject {
             .and_then(|p| plist::Value::from_file(p).ok())
             .and_then(|v| v.into_dictionary());
 
+        let pbxproj_path = pick_primary(&pbxprojs);
+        let pbxproj = pbxproj_path
+            .as_deref()
+            .and_then(|p| std::fs::read_to_string(p).ok());
+
         Some(IosProject {
             root: root.to_path_buf(),
             info_plist_path,
@@ -98,6 +110,8 @@ impl IosProject {
             entitlements_path,
             entitlements,
             source_files,
+            pbxproj_path,
+            pbxproj,
         })
     }
 

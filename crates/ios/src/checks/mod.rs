@@ -10,8 +10,10 @@ mod encryption;
 mod entitlements;
 mod ios17_permissions;
 mod location;
+mod pbxproj;
 mod privacy_manifest;
 mod sign_in_with_apple;
+mod store_text;
 mod url_schemes;
 mod usage_descriptions;
 mod versioning;
@@ -34,5 +36,9 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(ats_exceptions::AtsExceptionDomainsCheck),
         Box::new(url_schemes::QuerySchemesLimitCheck),
         Box::new(ios17_permissions::CalendarFullAccessCheck),
+        Box::new(pbxproj::DeploymentTargetConsistencyCheck),
+        Box::new(pbxproj::CodeSignIdentityPinCheck),
+        Box::new(store_text::StoreTextLimitsCheck),
+        Box::new(store_text::SubtitleKeywordListCheck),
     ]
 }

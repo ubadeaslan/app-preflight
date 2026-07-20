@@ -17,6 +17,8 @@ pub fn registry() -> Vec<Box<dyn BinaryCheck>> {
         Box::new(IdfaWithoutTracking),
         Box::new(AtsArbitraryLoads),
         Box::new(ProvisioningProfile),
+        Box::new(MissingPurposeString),
+        Box::new(IpadDeviceFamily),
     ]
 }
 
@@ -284,5 +286,106 @@ impl BinaryCheck for ProvisioningProfile {
             .remediation("Re-sign with an App Store distribution profile before submitting.")];
         }
         Vec::new()
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-BIN-008 — Permission-gated API referenced without its purpose string.
+///
+/// Apple's upload *processing* (not review) rejects these with errors like
+/// ITMS-90683, and the build silently disappears from the builds list — the
+/// rejection email arrives hours later. Catching it locally saves a build
+/// number and an upload round-trip.
+struct MissingPurposeString;
+
+const PURPOSE_STRING_META: CheckMeta = CheckMeta {
+    id: "IOS-BIN-008",
+    title: "Permission API used without its purpose string",
+    platform: Platform::Ios,
+    category: Category::Privacy,
+    default_severity: Severity::Error,
+    confidence: Confidence::Medium,
+    guideline: Some("5.1.1 / ITMS-90683"),
+    docs_url: Some(
+        "https://developer.apple.com/documentation/bundleresources/information_property_list/protected_resources",
+    ),
+};
+
+impl BinaryCheck for MissingPurposeString {
+    fn meta(&self) -> CheckMeta {
+        PURPOSE_STRING_META
+    }
+    fn run(&self, snap: &BinarySnapshot) -> Vec<Finding> {
+        // Group the offending APIs under each missing key so one key produces
+        // one finding, however many symbols point at it.
+        let mut missing: Vec<(&str, Vec<&str>)> = Vec::new();
+        for (api, key) in &snap.permission_api_hits {
+            if snap.usage_description_keys.iter().any(|k| k == key) {
+                continue;
+            }
+            match missing.iter_mut().find(|(k, _)| k == key) {
+                Some((_, apis)) => apis.push(api),
+                None => missing.push((key, vec![api])),
+            }
+        }
+        missing
+            .into_iter()
+            .map(|(key, apis)| {
+                Finding::from_meta(
+                    &PURPOSE_STRING_META,
+                    format!(
+                        "The binary references {} but the bundle Info.plist has no `{key}`. \
+                         Apple's upload processing rejects this (ITMS-90683) — the build \
+                         disappears without appearing in App Store Connect.",
+                        apis.join(", "),
+                    ),
+                )
+                .remediation(format!(
+                    "Add `{key}` with a user-facing sentence to the app's Info.plist and \
+                     rebuild. Third-party plugins (share/gallery/speech SDKs) often require \
+                     purpose strings the app itself never triggers directly.",
+                ))
+            })
+            .collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-BIN-009 — App targets iPad, which obligates iPad screenshots and an
+/// iPad-tested UI.
+struct IpadDeviceFamily;
+
+const DEVICE_FAMILY_META: CheckMeta = CheckMeta {
+    id: "IOS-BIN-009",
+    title: "App targets iPad (iPad screenshots and review required)",
+    platform: Platform::Ios,
+    category: Category::Configuration,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: Some("2.3.3"),
+    docs_url: Some(
+        "https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications",
+    ),
+};
+
+impl BinaryCheck for IpadDeviceFamily {
+    fn meta(&self) -> CheckMeta {
+        DEVICE_FAMILY_META
+    }
+    fn run(&self, snap: &BinarySnapshot) -> Vec<Finding> {
+        if !snap.device_families.contains(&2) {
+            return Vec::new();
+        }
+        vec![Finding::from_meta(
+            &DEVICE_FAMILY_META,
+            "UIDeviceFamily includes iPad, so App Store Connect will demand iPad screenshots \
+             and the reviewer will test on an iPad.",
+        )
+        .remediation(
+            "Either upload iPad screenshots and test the app on iPad, or set \
+             TARGETED_DEVICE_FAMILY = 1 (iPhone-only) before submitting.",
+        )]
     }
 }

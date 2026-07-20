@@ -35,6 +35,14 @@ pub struct BinarySnapshot {
     /// The embedded provisioning profile lists `ProvisionedDevices` (a
     /// development or ad-hoc profile, not an App Store distribution profile).
     pub provisioning_has_devices: bool,
+    /// Permission-gated APIs referenced by the executable, as
+    /// `(api_symbol, required_info_plist_key)` pairs.
+    pub permission_api_hits: Vec<(String, String)>,
+    /// `NS*UsageDescription` keys present with a non-empty value in the bundle
+    /// `Info.plist`.
+    pub usage_description_keys: Vec<String>,
+    /// `UIDeviceFamily` values from the bundle `Info.plist` (1 = iPhone, 2 = iPad).
+    pub device_families: Vec<i64>,
 }
 
 /// Analyze an `.ipa` at `path`.

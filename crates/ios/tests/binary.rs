@@ -143,8 +143,9 @@ fn checks_run_on_a_snapshot() {
         ats_allows_arbitrary_loads: true,
         provisioning_get_task_allow: true,
         provisioning_has_devices: false,
+        ..Default::default()
     };
-    // All seven iOS binary checks should fire.
+    // All seven of the original iOS binary checks should fire.
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert_eq!(ids.len(), 7);
 }
@@ -160,4 +161,85 @@ fn idfa_with_tracking_description_is_not_flagged() {
     };
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
     assert!(!ids.contains(&"IOS-BIN-005".to_string()));
+}
+
+#[test]
+fn permission_api_without_purpose_string_is_flagged() {
+    // Executable references PHPhotoLibrary + SFSpeechRecognizer; Info.plist has
+    // only the speech key — so only the photo key is reported missing (the
+    // Nokturn ITMS-90683 case).
+    let plist = r#"<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>Demo</string>
+<key>NSSpeechRecognitionUsageDescription</key><string>Transcribes your voice notes.</string>
+</dict></plist>"#;
+    let exec = b"pad PHPhotoLibrary pad SFSpeechRecognizer pad";
+    let path = write_ipa(
+        "permapi",
+        &[
+            ("Payload/Demo.app/Info.plist", plist.as_bytes()),
+            ("Payload/Demo.app/Demo", exec),
+            ("Payload/Demo.app/PrivacyInfo.xcprivacy", b"<plist/>"),
+        ],
+    );
+
+    let findings = preflight_ios::analyze_binary(&path).expect("analyzes");
+    let _ = std::fs::remove_file(&path);
+
+    let bin008: Vec<_> = findings
+        .iter()
+        .filter(|f| f.check_id == "IOS-BIN-008")
+        .collect();
+    assert_eq!(bin008.len(), 1, "findings: {findings:?}");
+    assert!(bin008[0].message.contains("NSPhotoLibraryUsageDescription"));
+    assert!(bin008[0].message.contains("PHPhotoLibrary"));
+}
+
+#[test]
+fn ipad_device_family_is_flagged() {
+    let snap = BinarySnapshot {
+        app_name: "Demo".into(),
+        has_privacy_manifest: true,
+        device_families: vec![1, 2],
+        ..Default::default()
+    };
+    let findings = run_checks(&snap);
+    let ids: Vec<&str> = findings.iter().map(|f| f.check_id.as_str()).collect();
+    assert!(ids.contains(&"IOS-BIN-009"));
+
+    let iphone_only = BinarySnapshot {
+        app_name: "Demo".into(),
+        has_privacy_manifest: true,
+        device_families: vec![1],
+        ..Default::default()
+    };
+    assert!(run_checks(&iphone_only).is_empty());
+}
+
+#[test]
+fn purpose_string_grouping_dedupes_by_key() {
+    // Two APIs pointing at the same missing key produce ONE finding listing both.
+    let snap = BinarySnapshot {
+        app_name: "Demo".into(),
+        has_privacy_manifest: true,
+        permission_api_hits: vec![
+            (
+                "PHAssetCreationRequest".into(),
+                "NSPhotoLibraryAddUsageDescription".into(),
+            ),
+            (
+                "UIImageWriteToSavedPhotosAlbum".into(),
+                "NSPhotoLibraryAddUsageDescription".into(),
+            ),
+        ],
+        ..Default::default()
+    };
+    let findings = run_checks(&snap);
+    let bin008: Vec<_> = findings
+        .iter()
+        .filter(|f| f.check_id == "IOS-BIN-008")
+        .collect();
+    assert_eq!(bin008.len(), 1);
+    assert!(bin008[0].message.contains("PHAssetCreationRequest"));
+    assert!(bin008[0].message.contains("UIImageWriteToSavedPhotosAlbum"));
 }

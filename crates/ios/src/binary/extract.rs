@@ -23,6 +23,19 @@ const DEBUG_NEEDLES: &[&str] = &[
 
 const PRIVATE_FRAMEWORKS_PATH: &str = "/System/Library/PrivateFrameworks/";
 
+/// Permission-gated API symbols and the `Info.plist` purpose-string key each one
+/// requires. Apple's upload processing rejects binaries that reference these
+/// frameworks without the matching key (e.g. ITMS-90683), so the mapping is
+/// deliberately conservative — symbols that unambiguously imply the permission.
+const PERMISSION_APIS: &[(&str, &str)] = &[
+    ("PHPhotoLibrary", "NSPhotoLibraryUsageDescription"),
+    ("PHAssetCreationRequest", "NSPhotoLibraryAddUsageDescription"),
+    ("UIImageWriteToSavedPhotosAlbum", "NSPhotoLibraryAddUsageDescription"),
+    ("SFSpeechRecognizer", "NSSpeechRecognitionUsageDescription"),
+    ("AVAudioRecorder", "NSMicrophoneUsageDescription"),
+    ("AVCaptureDevice", "NSCameraUsageDescription"),
+];
+
 pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     let file = std::fs::File::open(path).map_err(BinaryError::Io)?;
     let mut archive = ZipArchive::new(file).map_err(|e| BinaryError::Zip(e.to_string()))?;
@@ -63,6 +76,19 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
             .and_then(|ats| ats.get("NSAllowsArbitraryLoads"))
             .and_then(|v| v.as_boolean())
             .unwrap_or(false);
+        snap.usage_description_keys = dict
+            .iter()
+            .filter(|(k, v)| {
+                k.ends_with("UsageDescription")
+                    && v.as_string().map(|s| !s.trim().is_empty()).unwrap_or(false)
+            })
+            .map(|(k, _)| k.clone())
+            .collect();
+        snap.device_families = dict
+            .get("UIDeviceFamily")
+            .and_then(|v| v.as_array())
+            .map(|a| a.iter().filter_map(|v| v.as_signed_integer()).collect())
+            .unwrap_or_default();
     }
 
     let exec_name = info
@@ -140,6 +166,13 @@ fn scan_executable(bytes: &[u8], snap: &mut BinarySnapshot) {
     for needle in DEBUG_NEEDLES {
         if contains(bytes, needle.as_bytes()) {
             snap.debug_endpoints.push((*needle).to_string());
+        }
+    }
+
+    for (api, key) in PERMISSION_APIS {
+        if contains(bytes, api.as_bytes()) {
+            snap.permission_api_hits
+                .push(((*api).to_string(), (*key).to_string()));
         }
     }
 }

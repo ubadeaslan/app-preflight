@@ -117,3 +117,104 @@ fn empty_purpose_string_is_error() {
         .expect("camera finding present");
     assert_eq!(camera.severity, preflight_core::Severity::Error);
 }
+
+#[test]
+fn pbxproj_inconsistent_target_and_identity_pin_are_flagged() {
+    let dir = std::env::temp_dir().join(format!("preflight_pbx_{}", std::process::id()));
+    let proj = dir.join("Runner.xcodeproj");
+    let _ = std::fs::create_dir_all(&proj);
+    std::fs::write(
+        dir.join("Info.plist"),
+        r#"<?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.acme.app</string>
+<key>CFBundleShortVersionString</key><string>1.0.0</string>
+<key>CFBundleVersion</key><string>1</string>
+<key>ITSAppUsesNonExemptEncryption</key><false/>
+</dict></plist>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        proj.join("project.pbxproj"),
+        r#"// !$*UTF8*$!
+		IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+		"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+		IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+		IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+"#,
+    )
+    .unwrap();
+
+    let findings = preflight_ios::analyze(&dir, &Config::default()).expect("ios project");
+    let ids = ids(&findings);
+    let _ = std::fs::remove_dir_all(&dir);
+
+    assert!(ids.contains(&"IOS-CONFIG-011"), "ids: {ids:?}");
+    assert!(ids.contains(&"IOS-CONFIG-012"), "ids: {ids:?}");
+}
+
+#[test]
+fn consistent_pbxproj_produces_no_pbxproj_findings() {
+    let dir = std::env::temp_dir().join(format!("preflight_pbxok_{}", std::process::id()));
+    let proj = dir.join("Runner.xcodeproj");
+    let _ = std::fs::create_dir_all(&proj);
+    std::fs::write(
+        dir.join("Info.plist"),
+        r#"<?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.acme.app</string>
+</dict></plist>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        proj.join("project.pbxproj"),
+        "\t\tIPHONEOS_DEPLOYMENT_TARGET = 15.0;\n\t\tIPHONEOS_DEPLOYMENT_TARGET = 15.0;\n",
+    )
+    .unwrap();
+
+    let findings = preflight_ios::analyze(&dir, &Config::default()).expect("ios project");
+    let ids = ids(&findings);
+    let _ = std::fs::remove_dir_all(&dir);
+
+    assert!(!ids.contains(&"IOS-CONFIG-011"));
+    assert!(!ids.contains(&"IOS-CONFIG-012"));
+}
+
+#[test]
+fn fastlane_metadata_limits_and_keyword_subtitle_are_flagged() {
+    let dir = std::env::temp_dir().join(format!("preflight_store_{}", std::process::id()));
+    let ko = dir.join("ios/fastlane/metadata/ko");
+    let en = dir.join("ios/fastlane/metadata/en-US");
+    let _ = std::fs::create_dir_all(&ko);
+    let _ = std::fs::create_dir_all(&en);
+    std::fs::write(
+        dir.join("Info.plist"),
+        r#"<?xml version="1.0"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.acme.app</string>
+</dict></plist>"#,
+    )
+    .unwrap();
+    // ko: keyword-list subtitle (the Nokturn case) — also over 30 chars.
+    std::fs::write(ko.join("subtitle.txt"), "dream, diary, sleep, ai art, comics, symbols").unwrap();
+    // en-US: fine subtitle, oversized promotional text.
+    std::fs::write(en.join("subtitle.txt"), "Your dreams, beautifully kept").unwrap();
+    std::fs::write(en.join("promotional_text.txt"), "x".repeat(171)).unwrap();
+
+    let findings = preflight_ios::analyze(&dir, &Config::default()).expect("ios project");
+    let _ = std::fs::remove_dir_all(&dir);
+
+    let store1: Vec<_> = findings
+        .iter()
+        .filter(|f| f.check_id == "IOS-STORE-001")
+        .collect();
+    let store2: Vec<_> = findings
+        .iter()
+        .filter(|f| f.check_id == "IOS-STORE-002")
+        .collect();
+    // ko subtitle over limit + en promotional over limit.
+    assert_eq!(store1.len(), 2, "{store1:?}");
+    // Only the ko subtitle is a keyword list.
+    assert_eq!(store2.len(), 1, "{store2:?}");
+    assert!(store2[0].message.contains("ko"));
+}
