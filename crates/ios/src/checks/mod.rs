@@ -11,6 +11,7 @@ mod dart_defines;
 mod encryption;
 mod entitlements;
 mod ios17_permissions;
+mod l10n_arb;
 mod language_claims;
 mod location;
 mod orientation;
@@ -50,5 +51,7 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(language_claims::LanguageClaimCheck),
         Box::new(banned_terms::BannedTermsCheck),
         Box::new(password_reset::PasswordResetCheck),
+        Box::new(l10n_arb::ArbMissingKeysCheck),
+        Box::new(l10n_arb::ArbPlaceholderCheck),
     ]
 }

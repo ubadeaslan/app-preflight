@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 77 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 79 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (49)
+## iOS (51)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -29,6 +29,8 @@ app-preflight ships 77 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-012` | warning | configuration |  | CODE_SIGN_IDENTITY pinned to "iPhone Developer" |
 | `IOS-CONFIG-013` | info | configuration |  | Landscape orientations declared (reviewer will rotate) |
 | `IOS-CONFIG-014` | warning | configuration |  | Flutter dart-define environment is not production |
+| `IOS-CONFIG-015` | warning | configuration |  | Flutter l10n: locale missing keys from the template ARB |
+| `IOS-CONFIG-016` | warning | configuration |  | Flutter l10n: placeholder mismatch in translation |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-LEGAL-003` | warning | legal | 2.1 | Email sign-in without a password reset path |
