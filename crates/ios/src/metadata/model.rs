@@ -18,6 +18,15 @@ pub struct MetadataSnapshot {
     /// `APP_IPHONE_67`, `APP_IPAD_PRO_129`.
     pub screenshot_display_types: Vec<String>,
     pub review_detail: Option<ReviewDetail>,
+    /// Whether app availability (sale territories, `appAvailabilityV2`) has ever
+    /// been configured. `Some(false)` means the API definitively says "never set"
+    /// (a first submission blocker); `None` means we couldn't determine it.
+    pub availability_configured: Option<bool>,
+    /// Whether the app's price schedule actually contains manual prices. A bare
+    /// `GET .../appPriceSchedule` returning 200 can be an empty shell — only
+    /// `manualPrices` rows prove pricing is set. Same `Some(false)`/`None`
+    /// semantics as [`Self::availability_configured`].
+    pub manual_prices_present: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -63,6 +72,8 @@ pub fn fetch(client: &AscClient, bundle_id: &str) -> Result<MetadataSnapshot, Me
     // Propagate fetch errors rather than swallowing them — a failed fetch must
     // not be reported as "missing" by the checks (that would be a false Error).
     snap.privacy_policy_url = fetch_privacy_policy(client, app_id)?;
+    snap.availability_configured = fetch_availability_configured(client, app_id)?;
+    snap.manual_prices_present = fetch_manual_prices_present(client, app_id)?;
 
     // Current (most recent) iOS App Store version.
     let versions = client.get(&format!(
@@ -82,6 +93,36 @@ pub fn fetch(client: &AscClient, bundle_id: &str) -> Result<MetadataSnapshot, Me
     snap.review_detail = fetch_review_detail(client, &version_id).unwrap_or(None);
 
     Ok(snap)
+}
+
+/// `appAvailabilityV2` 404s (or comes back empty) when territories were never
+/// configured — apps created through the ASC UI can reach submission with this
+/// unset, and the submit then fails with a 409.
+fn fetch_availability_configured(
+    client: &AscClient,
+    app_id: &str,
+) -> Result<Option<bool>, MetadataError> {
+    let resp = client.get_optional(&format!("/v1/apps/{app_id}/appAvailabilityV2"))?;
+    Ok(Some(match resp {
+        None => false,
+        Some(v) => !v["data"].is_null(),
+    }))
+}
+
+/// Only `manualPrices` rows prove the price schedule is real; the schedule
+/// resource itself can exist as an empty shell (`APP_PRICING_REQUIRED` on
+/// submit).
+fn fetch_manual_prices_present(
+    client: &AscClient,
+    app_id: &str,
+) -> Result<Option<bool>, MetadataError> {
+    let resp = client.get_optional(&format!(
+        "/v1/appPriceSchedules/{app_id}/manualPrices?limit=1"
+    ))?;
+    Ok(Some(match resp {
+        None => false,
+        Some(v) => v["data"].as_array().is_some_and(|a| !a.is_empty()),
+    }))
 }
 
 fn fetch_privacy_policy(client: &AscClient, app_id: &str) -> Result<Option<String>, MetadataError> {

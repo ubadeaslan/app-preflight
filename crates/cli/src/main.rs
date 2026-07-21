@@ -31,6 +31,19 @@ enum Command {
     Explain(ExplainArgs),
     /// Scaffold a preflight.toml and a CI workflow.
     Init,
+    /// Dry-run an App Store review submission and report every blocker Apple
+    /// lists (availability, pricing, age rating, ...). Creates a draft
+    /// submission on App Store Connect and rolls it back; refuses to run if a
+    /// real submission is already in progress. Needs ASC_* credentials.
+    SubmitSim(SubmitSimArgs),
+}
+
+#[derive(Args)]
+struct SubmitSimArgs {
+    /// Project directory (used to detect the bundle id when ASC_BUNDLE_ID is
+    /// not set).
+    #[arg(default_value = ".")]
+    path: PathBuf,
 }
 
 #[derive(Args)]
@@ -129,6 +142,7 @@ fn main() -> ExitCode {
             }
         },
         Command::Init => init::run(),
+        Command::SubmitSim(args) => run_submit_sim(args),
     };
 
     match result {
@@ -290,6 +304,75 @@ fn strip_verbatim(path: PathBuf) -> PathBuf {
         PathBuf::from(rest)
     } else {
         path
+    }
+}
+
+/// `preflight submit-sim` — dry-run an App Store review submission. Talks to
+/// (and briefly writes to) App Store Connect, so it is its own command and
+/// never part of `preflight check`.
+fn run_submit_sim(args: SubmitSimArgs) -> Result<ExitCode> {
+    use preflight_ios::metadata::SubmitSimOutcome;
+    use preflight_ios::SubmitSimScan;
+
+    let root = strip_verbatim(
+        args.path
+            .canonicalize()
+            .with_context(|| format!("cannot access path {}", args.path.display()))?,
+    );
+    let config = Config::load_from_dir(&root).map_err(anyhow::Error::msg)?;
+
+    eprintln!("Simulating an App Store review submission (the draft is rolled back)...");
+    match preflight_ios::submit_simulation(&root, &config) {
+        SubmitSimScan::Skipped => {
+            eprintln!(
+                "error: App Store Connect credentials are not set — set ASC_ISSUER_ID, \
+                 ASC_KEY_ID and ASC_PRIVATE_KEY(_PATH)."
+            );
+            Ok(ExitCode::from(2))
+        }
+        SubmitSimScan::NoTarget => {
+            eprintln!("error: no concrete bundle id was found — set ASC_BUNDLE_ID.");
+            Ok(ExitCode::from(2))
+        }
+        SubmitSimScan::Failed(msg) => {
+            eprintln!("error: submit simulation failed: {msg}");
+            Ok(ExitCode::from(2))
+        }
+        SubmitSimScan::Done(report) => {
+            if let Some(warning) = &report.cleanup_warning {
+                eprintln!("warning: {warning}");
+            }
+            match report.outcome {
+                SubmitSimOutcome::InProgress { state } => {
+                    println!(
+                        "A review submission already exists (state: {state}). Simulation \
+                         skipped — it never touches a live submission."
+                    );
+                    Ok(ExitCode::SUCCESS)
+                }
+                SubmitSimOutcome::NoVersion => {
+                    eprintln!(
+                        "error: the app has no App Store version yet — create one in App \
+                         Store Connect first."
+                    );
+                    Ok(ExitCode::from(2))
+                }
+                SubmitSimOutcome::Clean => {
+                    println!(
+                        "Clean: Apple accepted the draft submission item — nothing blocks a \
+                         real submission. (Draft rolled back.)"
+                    );
+                    Ok(ExitCode::SUCCESS)
+                }
+                SubmitSimOutcome::Blocked { errors } => {
+                    println!("Apple lists {} submission blocker(s):", errors.len());
+                    for e in &errors {
+                        println!("  - {e}");
+                    }
+                    Ok(ExitCode::FAILURE)
+                }
+            }
+        }
     }
 }
 

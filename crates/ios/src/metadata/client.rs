@@ -31,6 +31,64 @@ impl AscClient {
             .into_json::<Value>()
             .map_err(|e| MetadataError::Unexpected(format!("invalid JSON from {path}: {e}")))
     }
+
+    /// GET where a 404 is a meaningful "this resource was never created" answer
+    /// (e.g. `appAvailabilityV2` before territories are ever configured), not a
+    /// failure: 404 maps to `Ok(None)`, other errors propagate.
+    pub fn get_optional(&self, path: &str) -> Result<Option<Value>, MetadataError> {
+        match self.get(path) {
+            Ok(v) => Ok(Some(v)),
+            Err(MetadataError::Api { status: 404, .. }) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// POST a JSON:API body. On a non-2xx response the *full* error body is
+    /// returned, because ASC packs the useful part (`meta.associatedErrors`)
+    /// inside it — a flattened detail string would lose exactly what the
+    /// submit simulation exists to read.
+    pub fn post(&self, path: &str, body: Value) -> Result<Value, PostFailure> {
+        let url = format!("{BASE_URL}{path}");
+        let result = ureq::post(&url)
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .send_json(body);
+        match result {
+            Ok(response) => response
+                .into_json::<Value>()
+                .map_err(|e| PostFailure::Other(format!("invalid JSON from {path}: {e}"))),
+            Err(ureq::Error::Status(status, response)) => {
+                let body = response.into_json::<Value>().unwrap_or(Value::Null);
+                Err(PostFailure::Status { status, body })
+            }
+            Err(ureq::Error::Transport(t)) => Err(PostFailure::Other(t.to_string())),
+        }
+    }
+
+    /// PATCH a JSON:API body; non-2xx maps to `MetadataError`.
+    pub fn patch(&self, path: &str, body: Value) -> Result<(), MetadataError> {
+        let url = format!("{BASE_URL}{path}");
+        ureq::request("PATCH", &url)
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .send_json(body)
+            .map_err(map_ureq_error)?;
+        Ok(())
+    }
+
+    /// DELETE a resource; non-2xx maps to `MetadataError`.
+    pub fn delete(&self, path: &str) -> Result<(), MetadataError> {
+        let url = format!("{BASE_URL}{path}");
+        ureq::delete(&url)
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .call()
+            .map_err(map_ureq_error)?;
+        Ok(())
+    }
+}
+
+/// A failed POST, keeping the whole ASC error body when there is one.
+pub enum PostFailure {
+    Status { status: u16, body: Value },
+    Other(String),
 }
 
 fn map_ureq_error(err: ureq::Error) -> MetadataError {

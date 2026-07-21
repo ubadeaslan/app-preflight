@@ -71,6 +71,35 @@ pub fn analyze_metadata(root: &Path, _config: &Config) -> MetadataScan {
     }
 }
 
+/// Outcome of `preflight submit-sim` at the CLI boundary.
+pub enum SubmitSimScan {
+    /// ASC credentials are not configured.
+    Skipped,
+    /// Credentials are set but no concrete bundle id was found.
+    NoTarget,
+    Done(metadata::SubmitSimReport),
+    Failed(String),
+}
+
+/// Run the review-submission simulation (see [`metadata::submit_sim`]).
+///
+/// Unlike [`analyze_metadata`] this WRITES to App Store Connect (a draft
+/// submission that is rolled back), so it only ever runs from its own explicit
+/// CLI command.
+pub fn submit_simulation(root: &Path, _config: &Config) -> SubmitSimScan {
+    let Some(creds) = metadata::AscCredentials::from_env() else {
+        return SubmitSimScan::Skipped;
+    };
+    let bundle_id = creds.bundle_id.clone().or_else(|| detect_bundle_id(root));
+    let Some(bundle_id) = bundle_id else {
+        return SubmitSimScan::NoTarget;
+    };
+    match metadata::submit_sim::run(&creds, &bundle_id) {
+        Ok(report) => SubmitSimScan::Done(report),
+        Err(e) => SubmitSimScan::Failed(e.to_string()),
+    }
+}
+
 /// The concrete bundle identifier from the project, or `None` if it is missing
 /// or expressed as an Xcode build variable like `$(PRODUCT_BUNDLE_IDENTIFIER)`.
 fn detect_bundle_id(root: &Path) -> Option<String> {

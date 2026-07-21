@@ -73,6 +73,7 @@ preflight check . --format markdown  # for a PR comment / CI job summary
 preflight check . --fail-on warning
 preflight rules                   # list every check preflight knows about
 preflight explain IOS-CONFIG-007  # show details for one check
+preflight submit-sim [PATH]       # dry-run an App Store review submission (needs ASC_* creds)
 
 # Baseline: adopt on a project that isn't clean yet — fail only on NEW issues.
 preflight check . --write-baseline                       # record current findings
@@ -111,6 +112,8 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-META-004`    | iOS | Empty / placeholder app description (2.3.7) |
 | `IOS-META-005`    | iOS | No iPhone screenshots uploaded (2.3.3) |
 | `IOS-META-006`    | iOS | Keyword list over the 100-character limit |
+| `IOS-META-007`    | iOS | App availability (sale territories) never configured — submit 409s |
+| `IOS-META-008`    | iOS | Price schedule has no manual prices (`APP_PRICING_REQUIRED` on submit) |
 | `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |
@@ -199,6 +202,21 @@ preflight check .
 If these aren't set, metadata checks are silently skipped — the rest of the scan
 still runs. Use `--skip-metadata` to force-skip them even when configured (e.g.
 in an offline CI job).
+
+### Submit simulation (`preflight submit-sim`)
+
+The single most complete pre-submission validator is Apple's own: when a review
+submission item is rejected, the 409 body's `meta.associatedErrors` lists
+*every* missing prerequisite at once (availability, pricing, age rating, ...).
+`preflight submit-sim` uses exactly that — it creates a draft review
+submission, tries to attach the current App Store version, reports what Apple
+lists, then rolls the draft back (deletes the item, cancels the submission).
+
+Because it briefly **writes** to App Store Connect, it is a separate explicit
+command and never runs as part of `preflight check`. Safety rule: if any
+unfinished review submission already exists for the app, it refuses to run and
+touches nothing. Exit codes: `0` clean (or safely skipped) · `1` blockers
+found · `2` configuration / API error.
 
 ## Google Play metadata scanning
 

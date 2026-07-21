@@ -21,6 +21,8 @@ pub fn registry() -> Vec<Box<dyn MetadataCheck>> {
         Box::new(DescriptionQuality),
         Box::new(IphoneScreenshots),
         Box::new(KeywordsLength),
+        Box::new(AvailabilityConfigured),
+        Box::new(ManualPricesPresent),
     ]
 }
 
@@ -294,6 +296,88 @@ impl MetadataCheck for KeywordsLength {
             }
         }
         findings
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-007 — App availability (sale territories) never configured. An app
+/// created through the ASC UI can reach submission with `appAvailabilityV2`
+/// unset; the review submission then 409s. Subscription availability is a
+/// separate resource and does NOT cover this.
+struct AvailabilityConfigured;
+
+const AVAILABILITY_META: CheckMeta = CheckMeta {
+    id: "IOS-META-007",
+    title: "App availability (territories) not configured",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some("https://developer.apple.com/documentation/appstoreconnectapi/app-availability"),
+};
+
+impl MetadataCheck for AvailabilityConfigured {
+    fn meta(&self) -> CheckMeta {
+        AVAILABILITY_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        // Only fire on a definitive "never set" — `None` means undetermined.
+        if snap.availability_configured == Some(false) {
+            vec![Finding::from_meta(
+                &AVAILABILITY_META,
+                "App availability (sale territories) has never been configured for this app. \
+                 Submitting for review will fail with a 409. Note this is separate from \
+                 subscription availability — configuring one does not configure the other.",
+            )
+            .remediation(
+                "Set the sale territories in App Store Connect > Pricing and Availability, or \
+                 POST /v2/appAvailabilities with your territory list.",
+            )]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-008 — Price schedule has no manual prices. `GET .../appPriceSchedule`
+/// answering 200 proves nothing (it can be an empty shell); only `manualPrices`
+/// rows do. Submitting without them fails with `APP_PRICING_REQUIRED`.
+struct ManualPricesPresent;
+
+const MANUAL_PRICES_META: CheckMeta = CheckMeta {
+    id: "IOS-META-008",
+    title: "App price schedule is empty",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some("https://developer.apple.com/documentation/appstoreconnectapi/app-price-schedules"),
+};
+
+impl MetadataCheck for ManualPricesPresent {
+    fn meta(&self) -> CheckMeta {
+        MANUAL_PRICES_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        if snap.manual_prices_present == Some(false) {
+            vec![Finding::from_meta(
+                &MANUAL_PRICES_META,
+                "The app's price schedule contains no manual prices, so submitting for review \
+                 will fail with APP_PRICING_REQUIRED. A 200 from the appPriceSchedule endpoint \
+                 alone does not mean pricing is set.",
+            )
+            .remediation(
+                "Set a price (0.00 for a free app is fine) in App Store Connect > Pricing and \
+                 Availability, or POST /v1/appPriceSchedules with a base territory price point.",
+            )]
+        } else {
+            Vec::new()
+        }
     }
 }
 

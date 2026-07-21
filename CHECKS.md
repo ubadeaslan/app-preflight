@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 62 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 64 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (34)
+## iOS (36)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -35,6 +35,8 @@ app-preflight ships 62 checks. Regenerate this file with `preflight rules --form
 | `IOS-META-004` | warning | metadata | 2.3 | Weak or missing app description |
 | `IOS-META-005` | error | metadata | 2.3.3 | No iPhone screenshots uploaded |
 | `IOS-META-006` | warning | metadata |  | Keyword list exceeds 100 characters |
+| `IOS-META-007` | error | metadata |  | App availability (territories) not configured |
+| `IOS-META-008` | error | metadata |  | App price schedule is empty |
 | `IOS-PRIVACY-001` | warning | privacy | 5.1.1 | Missing privacy manifest (PrivacyInfo.xcprivacy) |
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |

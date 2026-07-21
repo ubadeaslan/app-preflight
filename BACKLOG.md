@@ -41,9 +41,9 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B26 | TestFlight internal betaGroup + tester akışı | manuel/prosedür |
 | B27 | Build listesi sorgusu filter[app] ile | (implementasyon notu — B2 yazılırken uygulanır) |
 | B28 | deliver metadata/screenshot lane ayrımı | prosedür (playbook-05 §16.3) |
-| B35 | appAvailabilityV2 set edilmiş mi | açık — **yüksek öncelik (submit blokeri)** |
-| B36 | appPriceSchedule manualPrices dolu mu | açık — **yüksek öncelik (submit blokeri)** |
-| B37 | Submit-simülasyonu (reviewSubmissionItems → associatedErrors → geri al) | açık — en değerli tek check adayı |
+| B35 | appAvailabilityV2 set edilmiş mi | **yazıldı — IOS-META-007** (2026-07-21; 404/boş data = hiç kurulmamış) |
+| B36 | appPriceSchedule manualPrices dolu mu | **yazıldı — IOS-META-008** (2026-07-21; schedule 200 yanıltır, manualPrices satırı şart) |
+| B37 | Submit-simülasyonu (reviewSubmissionItems → associatedErrors → geri al) | **yazıldı — `preflight submit-sim` komutu** (2026-07-21; yazma içerdiğinden check değil ayrı komut; bitmemiş submission varsa dokunmadan çekilir. Canlı test bekliyor: guard yolu Nokturn incelemedeyken, blocked/clean yolları bir sonraki uygulamada) |
 
 ## Çalışma zamanı (yalnız macOS)
 

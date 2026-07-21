@@ -14,9 +14,11 @@ pub mod auth;
 pub mod checks;
 mod client;
 mod model;
+pub mod submit_sim;
 
 pub use auth::AscCredentials;
 pub use model::{Localization, MetadataSnapshot, ReviewDetail};
+pub use submit_sim::{SubmitSimOutcome, SubmitSimReport};
 
 use preflight_core::{CheckMeta, Finding};
 

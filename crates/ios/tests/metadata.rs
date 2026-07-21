@@ -104,6 +104,8 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
             demo_account_password: None,
             ..Default::default()
         }),
+        availability_configured: Some(false), // IOS-META-007
+        manual_prices_present: Some(false),   // IOS-META-008
     };
 
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
@@ -114,6 +116,8 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
         "IOS-META-004",
         "IOS-META-005",
         "IOS-META-006",
+        "IOS-META-007",
+        "IOS-META-008",
     ] {
         assert!(ids.contains(&expected.to_string()), "missing {expected}");
     }
@@ -137,7 +141,24 @@ fn clean_snapshot_produces_no_findings() {
             demo_account_required: false,
             ..Default::default()
         }),
+        availability_configured: Some(true),
+        manual_prices_present: Some(true),
     };
 
     assert!(run_checks(&snap).is_empty());
+}
+
+/// `None` means "could not determine" for availability/pricing — the submit
+/// blocker checks must stay silent rather than guess.
+#[test]
+fn undetermined_availability_and_pricing_produce_no_findings() {
+    let snap = MetadataSnapshot {
+        bundle_id: "com.example.myapp".into(),
+        availability_configured: None,
+        manual_prices_present: None,
+        ..Default::default()
+    };
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert!(!ids.contains(&"IOS-META-007".to_string()));
+    assert!(!ids.contains(&"IOS-META-008".to_string()));
 }
