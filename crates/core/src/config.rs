@@ -20,6 +20,11 @@ pub struct Config {
     pub fail_on: Option<Severity>,
     /// Per-check severity overrides, e.g. `IOS-CONFIG-001 = "warning"`.
     pub severity: HashMap<String, Severity>,
+    /// Terms that must never appear in store metadata text (name, subtitle,
+    /// keywords, promo) — off-category words that invite a 2.3.7 rejection,
+    /// e.g. ["tarot", "casino"]. Case-insensitive substring match; empty list
+    /// disables IOS-STORE-004.
+    pub banned_metadata_terms: Vec<String>,
 }
 
 impl Config {

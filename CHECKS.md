@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 74 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 77 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (46)
+## iOS (49)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -31,6 +31,7 @@ app-preflight ships 74 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-014` | warning | configuration |  | Flutter dart-define environment is not production |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
+| `IOS-LEGAL-003` | warning | legal | 2.1 | Email sign-in without a password reset path |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
 | `IOS-META-002` | error | metadata | 1.5 | Missing support URL |
 | `IOS-META-003` | error | metadata | 2.1 | Demo account required but not provided |
@@ -46,12 +47,14 @@ app-preflight ships 74 checks. Regenerate this file with `preflight rules --form
 | `IOS-META-013` | warning | metadata |  | Subscription priced in only one territory |
 | `IOS-META-014` | warning | metadata |  | Introductory offer does not cover all priced territories |
 | `IOS-META-015` | error | metadata |  | Age rating declaration not completed |
+| `IOS-META-016` | warning | metadata | 4.1 | App name collides with an existing store app |
 | `IOS-PRIVACY-001` | warning | privacy | 5.1.1 | Missing privacy manifest (PrivacyInfo.xcprivacy) |
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 | `IOS-STORE-001` | error | metadata |  | Store metadata text over its character limit |
 | `IOS-STORE-002` | warning | metadata | 2.3.7 | Subtitle reads as a keyword list |
 | `IOS-STORE-003` | warning | metadata | 2.3.1 | Language-count claim doesn't match ARB count |
+| `IOS-STORE-004` | warning | metadata | 2.3.7 | Banned term found in store metadata |
 
 ## Android (28)
 

@@ -124,6 +124,9 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-CONFIG-013`  | iOS | Landscape declared but likely untested (reviewer rotates the phone) |
 | `IOS-CONFIG-014`  | iOS | Flutter `--dart-define` env in Generated.xcconfig is not production |
 | `IOS-STORE-003`   | iOS | "Supports N languages" claim doesn't match the ARB language count |
+| `IOS-STORE-004`   | iOS | Banned/off-category term in store metadata (list via `banned_metadata_terms`) |
+| `IOS-LEGAL-003`   | iOS | Email sign-in without a password reset path (dead-end flow) |
+| `IOS-META-016`    | iOS | App name collides with an existing store app (impersonation risk) |
 | `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |

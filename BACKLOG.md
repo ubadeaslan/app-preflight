@@ -21,7 +21,7 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B9 | İstemci timeout > sunucu timeout | manuel (iki ayrı repo/dil; kod incelemesi işi) |
 | B10 | Subtitle keyword listesi olmasın (2.3.7) | **yazıldı — IOS-STORE-002** |
 | B11 | Metadata'da olmayan özellik vaadi (2.3.1) | manuel (anlam analizi ister) |
-| B12 | Alakasız/yasaklı kategori kelimesi | açık (yapılandırılabilir kelime listesi — düşük öncelik) |
+| B12 | Alakasız/yasaklı kategori kelimesi | **yazıldı — IOS-STORE-004** (2026-07-21; `preflight.toml` `banned_metadata_terms` listesi; boş liste = sessiz. Uygulama başına liste /aso veya /uygulama-kabul turunda doldurulur) |
 | B13 | Sayısal iddialar gerçekle eşleşsin ("N dil" ↔ ARB sayısı) | **yazıldı — IOS-STORE-003** (2026-07-21; 19 dilde "N language" kelime eşleme + benzersiz ARB dil sayımı, bölgesel varyantlar tekilleştirilir. İlk canlı koşuda gerçek bulgu: Nokturn metadata "16 dil" ↔ 30 ARB dili) |
 | B14 | Karakter limitleri (subtitle 30 / keywords 100 / promo 170) | **yazıldı — IOS-STORE-001** (fastlane dosyaları; ASC tarafı IOS-META-006) |
 | — | "iPhone Developer" CODE_SIGN_IDENTITY pini (imza savaşı A1.6) | **yazıldı — IOS-CONFIG-012** |
@@ -62,4 +62,4 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B17 | Paywall vaatleri ↔ sunucu teslimi | manuel |
 | B29 | Privacy label ↔ gerçek toplama (FCM token vb.) | manuel (denetim-gizlilik skill'i kapsıyor) |
 | B30 | deleteAccount hata yutmasın | manuel (code review konusu) |
-| B31 | Email girişi varsa şifre sıfırlama yolu | açık (heuristik: FirebaseAuth + sendPasswordReset yokluğu — düşük öncelik) |
+| B31 | Email girişi varsa şifre sıfırlama yolu | **yazıldı — IOS-LEGAL-003** (2026-07-21; lib/**.dart'ta signInWithEmailAndPassword var + sendPasswordResetEmail yok → uyarı) |

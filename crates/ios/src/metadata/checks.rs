@@ -30,6 +30,7 @@ pub fn registry() -> Vec<Box<dyn MetadataCheck>> {
         Box::new(SubscriptionPriceCoverage),
         Box::new(IntroOfferCoverage),
         Box::new(AgeRatingCompleted),
+        Box::new(NameCollision),
     ]
 }
 
@@ -727,6 +728,50 @@ impl MetadataCheck for AgeRatingCompleted {
         } else {
             Vec::new()
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-016 — another store app already carries exactly this name.
+/// Impersonation enforcement looks at name AND visual identity (TipsterHub was
+/// REMOVED with title, icon, feature graphic and description each flagged), so
+/// an exact name twin deserves a look before Apple or Google take one.
+struct NameCollision;
+
+const NAME_COLLISION_META: CheckMeta = CheckMeta {
+    id: "IOS-META-016",
+    title: "App name collides with an existing store app",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Warning,
+    confidence: Confidence::Medium,
+    guideline: Some("4.1"),
+    docs_url: Some("https://developer.apple.com/app-store/review/guidelines/#copycats"),
+};
+
+impl MetadataCheck for NameCollision {
+    fn meta(&self) -> CheckMeta {
+        NAME_COLLISION_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        if snap.name_collisions.is_empty() {
+            return Vec::new();
+        }
+        vec![Finding::from_meta(
+            &NAME_COLLISION_META,
+            format!(
+                "The store search returns other app(s) with exactly this name: {}. Same-name \
+                 apps in the same space are impersonation-flag material — enforcement also \
+                 weighs icon/graphic similarity, and store search alone is not a full \
+                 clearance (check the sector/web and trademarks too).",
+                snap.name_collisions.join("; ")
+            ),
+        )
+        .remediation(
+            "Verify the twin is unrelated (different category/space) or pick a more \
+             distinctive name; compare visual identities while at it.",
+        )]
     }
 }
 

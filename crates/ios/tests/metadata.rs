@@ -130,6 +130,7 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
             },
         ],
         age_rating_completed: Some(false), // IOS-META-015
+        name_collisions: vec!["MyApp — Someone Else (com.other.myapp)".into()], // IOS-META-016
     };
 
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
@@ -149,6 +150,7 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
         "IOS-META-013",
         "IOS-META-014",
         "IOS-META-015",
+        "IOS-META-016",
     ] {
         assert!(ids.contains(&expected.to_string()), "missing {expected}");
     }
@@ -189,6 +191,7 @@ fn clean_snapshot_produces_no_findings() {
             intro_offer_count: Some(175),
         }],
         age_rating_completed: Some(true),
+        name_collisions: vec![],
     };
 
     assert!(run_checks(&snap).is_empty());

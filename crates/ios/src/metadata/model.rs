@@ -46,6 +46,11 @@ pub struct MetadataSnapshot {
     /// Whether the age rating declaration (under `appInfos`, not the version)
     /// has been filled in. `Some(false)` = all fields still null.
     pub age_rating_completed: Option<bool>,
+    /// Other store apps whose name matches this app's name exactly
+    /// (`"Name — Seller (bundle.id)"`), from the public iTunes Search API.
+    /// Same-name apps in the same space are impersonation-flag material
+    /// (TipsterHub was REMOVED over name + visuals matching a company).
+    pub name_collisions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -134,6 +139,9 @@ pub fn fetch(
     }
     snap.subscriptions = fetch_subscriptions(client, app_id).unwrap_or_default();
     snap.age_rating_completed = fetch_age_rating_completed(client, app_id).unwrap_or(None);
+    if let Some(name) = snap.app_name.clone() {
+        snap.name_collisions = fetch_name_collisions(bundle_id, &name);
+    }
 
     // Current (most recent) iOS App Store version.
     let versions = client.get(&format!(
@@ -445,6 +453,52 @@ fn fetch_age_rating_completed(
         return Ok(Some(false));
     };
     Ok(Some(map.values().any(|v| !v.is_null())))
+}
+
+/// Ask the public iTunes Search API (no auth) whether another app already
+/// carries exactly this name. Best-effort: any failure returns an empty list.
+fn fetch_name_collisions(bundle_id: &str, app_name: &str) -> Vec<String> {
+    let url = format!(
+        "https://itunes.apple.com/search?term={}&entity=software&limit=25",
+        percent_encode(app_name)
+    );
+    let Ok(resp) = ureq::get(&url).call() else {
+        return Vec::new();
+    };
+    let Ok(json) = resp.into_json::<Value>() else {
+        return Vec::new();
+    };
+    let target = app_name.trim().to_lowercase();
+    let mut out = Vec::new();
+    for result in json["results"].as_array().into_iter().flatten() {
+        let name = result["trackName"].as_str().unwrap_or("");
+        let bid = result["bundleId"].as_str().unwrap_or("");
+        if bid.eq_ignore_ascii_case(bundle_id) {
+            continue; // Our own listing.
+        }
+        if name.trim().to_lowercase() == target {
+            let seller = result["sellerName"]
+                .as_str()
+                .or_else(|| result["artistName"].as_str())
+                .unwrap_or("?");
+            out.push(format!("{name} — {seller} ({bid})"));
+        }
+    }
+    out
+}
+
+/// Minimal percent-encoding for a query value.
+fn percent_encode(input: &str) -> String {
+    let mut out = String::new();
+    for byte in input.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(byte as char)
+            }
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
 }
 
 /// Read a string `attributes.<key>`, treating empty strings as absent.

@@ -6,6 +6,7 @@ use crate::IosCheck;
 mod account_deletion;
 mod ats;
 mod ats_exceptions;
+mod banned_terms;
 mod dart_defines;
 mod encryption;
 mod entitlements;
@@ -13,6 +14,7 @@ mod ios17_permissions;
 mod language_claims;
 mod location;
 mod orientation;
+mod password_reset;
 mod pbxproj;
 mod privacy_manifest;
 mod sign_in_with_apple;
@@ -46,5 +48,7 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(orientation::OrientationLockCheck),
         Box::new(dart_defines::DartDefinesEnvCheck),
         Box::new(language_claims::LanguageClaimCheck),
+        Box::new(banned_terms::BannedTermsCheck),
+        Box::new(password_reset::PasswordResetCheck),
     ]
 }
