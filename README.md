@@ -114,6 +114,13 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-META-006`    | iOS | Keyword list over the 100-character limit |
 | `IOS-META-007`    | iOS | App availability (sale territories) never configured — submit 409s |
 | `IOS-META-008`    | iOS | Price schedule has no manual prices (`APP_PRICING_REQUIRED` on submit) |
+| `IOS-META-009`    | iOS | App Review contact info (name/phone/email) missing — hidden submit blocker |
+| `IOS-META-010`    | iOS | Latest build upload rejected in processing (invisible in the builds list) |
+| `IOS-META-011`    | iOS | Project build number already uploaded once (burned) |
+| `IOS-META-012`    | iOS | Subscription stuck in `MISSING_METADATA` |
+| `IOS-META-013`    | iOS | Subscription priced in only the base territory (equalizations missing) |
+| `IOS-META-014`    | iOS | Intro offers cover fewer territories than prices |
+| `IOS-META-015`    | iOS | Age rating declaration never filled in (lives under `appInfos`) |
 | `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |

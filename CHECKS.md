@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 64 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 71 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (36)
+## iOS (43)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -37,6 +37,13 @@ app-preflight ships 64 checks. Regenerate this file with `preflight rules --form
 | `IOS-META-006` | warning | metadata |  | Keyword list exceeds 100 characters |
 | `IOS-META-007` | error | metadata |  | App availability (territories) not configured |
 | `IOS-META-008` | error | metadata |  | App price schedule is empty |
+| `IOS-META-009` | error | metadata |  | App Review contact information missing |
+| `IOS-META-010` | error | metadata |  | Latest build upload failed processing |
+| `IOS-META-011` | warning | metadata |  | Build number already uploaded (burned) |
+| `IOS-META-012` | error | metadata | 2.1 | Subscription metadata incomplete (MISSING_METADATA) |
+| `IOS-META-013` | warning | metadata |  | Subscription priced in only one territory |
+| `IOS-META-014` | warning | metadata |  | Introductory offer does not cover all priced territories |
+| `IOS-META-015` | error | metadata |  | Age rating declaration not completed |
 | `IOS-PRIVACY-001` | warning | privacy | 5.1.1 | Missing privacy manifest (PrivacyInfo.xcprivacy) |
 | `IOS-PRIVACY-002` | error | privacy | 5.1.1 | Weak or empty permission purpose string |
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |

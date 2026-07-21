@@ -23,6 +23,13 @@ pub fn registry() -> Vec<Box<dyn MetadataCheck>> {
         Box::new(KeywordsLength),
         Box::new(AvailabilityConfigured),
         Box::new(ManualPricesPresent),
+        Box::new(ReviewContactInfo),
+        Box::new(BuildUploadFailed),
+        Box::new(BuildNumberBurned),
+        Box::new(SubscriptionMetadataComplete),
+        Box::new(SubscriptionPriceCoverage),
+        Box::new(IntroOfferCoverage),
+        Box::new(AgeRatingCompleted),
     ]
 }
 
@@ -376,6 +383,346 @@ impl MetadataCheck for ManualPricesPresent {
             .remediation(
                 "Set a price (0.00 for a free app is fine) in App Store Connect > Pricing and \
                  Availability, or POST /v1/appPriceSchedules with a base territory price point.",
+            )]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-009 — `appStoreReviewDetail` with contact name, phone and email is
+/// required; its absence is a hidden submit blocker.
+struct ReviewContactInfo;
+
+const REVIEW_CONTACT_META: CheckMeta = CheckMeta {
+    id: "IOS-META-009",
+    title: "App Review contact information missing",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/",
+    ),
+};
+
+impl MetadataCheck for ReviewContactInfo {
+    fn meta(&self) -> CheckMeta {
+        REVIEW_CONTACT_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        if snap.review_detail_present == Some(false) {
+            return vec![Finding::from_meta(
+                &REVIEW_CONTACT_META,
+                "No App Review information exists for this version at all (contact name, phone \
+                 and email are required to submit).",
+            )
+            .remediation(
+                "Fill in App Store Connect > App Review Information, or POST \
+                 /v1/appStoreReviewDetails via the API.",
+            )];
+        }
+        let Some(review) = &snap.review_detail else {
+            return Vec::new(); // Undetermined — stay silent.
+        };
+        let mut missing = Vec::new();
+        if is_blank(&review.contact_first_name) || is_blank(&review.contact_last_name) {
+            missing.push("contact name");
+        }
+        if is_blank(&review.contact_phone) {
+            missing.push("contact phone");
+        }
+        if is_blank(&review.contact_email) {
+            missing.push("contact email");
+        }
+        if missing.is_empty() {
+            Vec::new()
+        } else {
+            vec![Finding::from_meta(
+                &REVIEW_CONTACT_META,
+                format!(
+                    "App Review information is missing: {}. Submission requires all of them.",
+                    missing.join(", ")
+                ),
+            )
+            .remediation("Complete App Store Connect > App Review Information.")]
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-010 — The latest build upload failed processing. `/v1/builds`
+/// never lists such a build (it just "disappears") and the rejection email
+/// arrives hours later; only `buildUploads.state.errors[]` has the reason.
+struct BuildUploadFailed;
+
+const BUILD_UPLOAD_META: CheckMeta = CheckMeta {
+    id: "IOS-META-010",
+    title: "Latest build upload failed processing",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some("https://developer.apple.com/documentation/appstoreconnectapi"),
+};
+
+impl MetadataCheck for BuildUploadFailed {
+    fn meta(&self) -> CheckMeta {
+        BUILD_UPLOAD_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        let Some(failed) = &snap.failed_build_upload else {
+            return Vec::new();
+        };
+        let version = failed.version.as_deref().unwrap_or("unknown");
+        let reasons = if failed.messages.is_empty() {
+            "no reason given".to_string()
+        } else {
+            failed.messages.join("; ")
+        };
+        vec![Finding::from_meta(
+            &BUILD_UPLOAD_META,
+            format!(
+                "The most recent build upload (build {version}) was rejected during processing: \
+                 {reasons}. It will never appear in the builds list."
+            ),
+        )
+        .remediation(
+            "Fix the listed issue (often a missing Info.plist purpose string, e.g. ITMS-90683) \
+             and upload again with a NEW build number — the failed one is burned.",
+        )]
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-011 — The project's build number was already uploaded once
+/// (including uploads rejected during processing) and cannot be reused.
+struct BuildNumberBurned;
+
+const BUILD_NUMBER_META: CheckMeta = CheckMeta {
+    id: "IOS-META-011",
+    title: "Build number already uploaded (burned)",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some("https://developer.apple.com/documentation/appstoreconnectapi"),
+};
+
+impl MetadataCheck for BuildNumberBurned {
+    fn meta(&self) -> CheckMeta {
+        BUILD_NUMBER_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        let (Some(project), Some(max_uploaded)) =
+            (snap.project_build_number, snap.max_uploaded_build_number)
+        else {
+            return Vec::new();
+        };
+        if project > max_uploaded {
+            return Vec::new();
+        }
+        vec![Finding::from_meta(
+            &BUILD_NUMBER_META,
+            format!(
+                "The project's CFBundleVersion is {project}, but build {max_uploaded} was \
+                 already uploaded — numbers are burned even when processing rejected them."
+            ),
+        )
+        .remediation(format!(
+            "Bump the build number to at least {}.",
+            max_uploaded + 1
+        ))]
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-012 — ASC's own subscription readiness verdict. A subscription in
+/// `MISSING_METADATA` (localizations, review screenshot or prices incomplete)
+/// blocks the first submission that carries it.
+struct SubscriptionMetadataComplete;
+
+const SUB_METADATA_META: CheckMeta = CheckMeta {
+    id: "IOS-META-012",
+    title: "Subscription metadata incomplete (MISSING_METADATA)",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: Some("2.1"),
+    docs_url: Some(
+        "https://developer.apple.com/documentation/appstoreconnectapi/app-store/subscriptions",
+    ),
+};
+
+impl MetadataCheck for SubscriptionMetadataComplete {
+    fn meta(&self) -> CheckMeta {
+        SUB_METADATA_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        snap.subscriptions
+            .iter()
+            .filter(|s| s.state.as_deref() == Some("MISSING_METADATA"))
+            .map(|s| {
+                Finding::from_meta(
+                    &SUB_METADATA_META,
+                    format!(
+                        "Subscription `{}` is in MISSING_METADATA — App Store Connect considers \
+                         its localizations, review screenshot or prices incomplete.",
+                        s.name
+                    ),
+                )
+                .remediation(
+                    "Complete every locale's display name + description (45 chars), upload the \
+                     review screenshot, and make sure prices cover all sale territories; the \
+                     state flips to READY_TO_SUBMIT by itself when everything is in place.",
+                )
+            })
+            .collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-013 — Subscription priced only in the base territory. Writing
+/// `subscriptionPrices` covers ONE country; the other ~174 need equalization
+/// POSTs, and availability must be set before prices (409 otherwise).
+struct SubscriptionPriceCoverage;
+
+const SUB_PRICE_META: CheckMeta = CheckMeta {
+    id: "IOS-META-013",
+    title: "Subscription priced in only one territory",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Warning,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/documentation/appstoreconnectapi/app-store/subscriptions",
+    ),
+};
+
+impl MetadataCheck for SubscriptionPriceCoverage {
+    fn meta(&self) -> CheckMeta {
+        SUB_PRICE_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        snap.subscriptions
+            .iter()
+            .filter(|s| s.price_count == Some(1))
+            .map(|s| {
+                Finding::from_meta(
+                    &SUB_PRICE_META,
+                    format!(
+                        "Subscription `{}` has a price in only one territory — the base-country \
+                         price does not propagate to the other sale territories by itself.",
+                        s.name
+                    ),
+                )
+                .remediation(
+                    "Fetch subscriptionPricePoints/{id}/equalizations and POST a price per \
+                     territory (set availability BEFORE prices, or the POSTs 409).",
+                )
+            })
+            .collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-014 — Introductory offers are per-territory. Offers covering fewer
+/// territories than the prices mean some countries see no trial.
+struct IntroOfferCoverage;
+
+const INTRO_OFFER_META: CheckMeta = CheckMeta {
+    id: "IOS-META-014",
+    title: "Introductory offer does not cover all priced territories",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Warning,
+    confidence: Confidence::Medium,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/documentation/appstoreconnectapi/app-store/subscriptions",
+    ),
+};
+
+impl MetadataCheck for IntroOfferCoverage {
+    fn meta(&self) -> CheckMeta {
+        INTRO_OFFER_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        snap.subscriptions
+            .iter()
+            .filter(|s| {
+                matches!(
+                    (s.intro_offer_count, s.price_count),
+                    (Some(offers), Some(prices)) if offers > 0 && offers < prices
+                )
+            })
+            .map(|s| {
+                let offers = s.intro_offer_count.unwrap_or(0);
+                let prices = s.price_count.unwrap_or(0);
+                Finding::from_meta(
+                    &INTRO_OFFER_META,
+                    format!(
+                        "Subscription `{}` has introductory offers in {offers} territories but \
+                         prices in {prices} — offers are per-territory and do not propagate.",
+                        s.name
+                    ),
+                )
+                .remediation(
+                    "POST the introductory offer for each remaining territory (the API answers \
+                     409 \"must provide territory\" when the territory is omitted).",
+                )
+            })
+            .collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+/// IOS-META-015 — The age rating declaration (under `appInfos`, not the
+/// version) has never been filled in; submission requires it.
+struct AgeRatingCompleted;
+
+const AGE_RATING_META: CheckMeta = CheckMeta {
+    id: "IOS-META-015",
+    title: "Age rating declaration not completed",
+    platform: Platform::Ios,
+    category: Category::Metadata,
+    default_severity: Severity::Error,
+    confidence: Confidence::High,
+    guideline: None,
+    docs_url: Some(
+        "https://developer.apple.com/documentation/appstoreconnectapi/managing-age-rating-declarations",
+    ),
+};
+
+impl MetadataCheck for AgeRatingCompleted {
+    fn meta(&self) -> CheckMeta {
+        AGE_RATING_META
+    }
+    fn run(&self, snap: &MetadataSnapshot) -> Vec<Finding> {
+        if snap.age_rating_completed == Some(false) {
+            vec![Finding::from_meta(
+                &AGE_RATING_META,
+                "The age rating declaration has never been filled in (all fields are null). It \
+                 lives under appInfos — not the version — and submission requires it.",
+            )
+            .remediation(
+                "Complete the age rating questionnaire in App Store Connect > App Information, \
+                 or PATCH /v1/ageRatingDeclarations/{id}. Note some fields are booleans \
+                 (healthOrWellnessTopics, ageAssurance) while most are NONE/INFREQUENT_OR_MILD \
+                 enums; new required fields surface as 409s.",
             )]
         } else {
             Vec::new()

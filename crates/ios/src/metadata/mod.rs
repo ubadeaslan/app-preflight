@@ -17,15 +17,24 @@ mod model;
 pub mod submit_sim;
 
 pub use auth::AscCredentials;
-pub use model::{Localization, MetadataSnapshot, ReviewDetail};
+pub use model::{
+    FailedBuildUpload, Localization, MetadataSnapshot, ReviewDetail, SubscriptionInfo,
+};
 pub use submit_sim::{SubmitSimOutcome, SubmitSimReport};
 
 use preflight_core::{CheckMeta, Finding};
 
 /// Run the metadata checks for `bundle_id` using `creds`.
-pub fn analyze(creds: &AscCredentials, bundle_id: &str) -> Result<Vec<Finding>, MetadataError> {
+///
+/// `project_build_number` is the local project's concrete `CFBundleVersion`
+/// (when it is a plain number) — used to flag burned build numbers.
+pub fn analyze(
+    creds: &AscCredentials,
+    bundle_id: &str,
+    project_build_number: Option<u64>,
+) -> Result<Vec<Finding>, MetadataError> {
     let client = client::AscClient::new(creds)?;
-    let snapshot = model::fetch(&client, bundle_id)?;
+    let snapshot = model::fetch(&client, bundle_id, project_build_number)?;
     Ok(run_checks(&snapshot))
 }
 

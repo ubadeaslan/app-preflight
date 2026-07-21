@@ -4,7 +4,9 @@
 
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use preflight_ios::metadata::auth::{make_token, AscCredentials};
-use preflight_ios::metadata::{run_checks, Localization, MetadataSnapshot, ReviewDetail};
+use preflight_ios::metadata::{
+    run_checks, FailedBuildUpload, Localization, MetadataSnapshot, ReviewDetail, SubscriptionInfo,
+};
 use serde::Deserialize;
 
 const TEST_PRIVATE_KEY: &str = include_str!("fixtures/test_ec_private.pem");
@@ -106,6 +108,28 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
         }),
         availability_configured: Some(false), // IOS-META-007
         manual_prices_present: Some(false),   // IOS-META-008
+        review_detail_present: Some(true),    // present, contacts blank → IOS-META-009
+        project_build_number: Some(4),
+        max_uploaded_build_number: Some(7), // 4 <= 7 → IOS-META-011
+        failed_build_upload: Some(FailedBuildUpload {
+            version: Some("7".into()),
+            messages: vec!["ITMS-90683: missing purpose string".into()],
+        }), // IOS-META-010
+        subscriptions: vec![
+            SubscriptionInfo {
+                name: "Premium Monthly".into(),
+                state: Some("MISSING_METADATA".into()), // IOS-META-012
+                price_count: Some(1),                   // IOS-META-013
+                intro_offer_count: None,
+            },
+            SubscriptionInfo {
+                name: "Premium Yearly".into(),
+                state: Some("READY_TO_SUBMIT".into()),
+                price_count: Some(175),
+                intro_offer_count: Some(3), // 3 < 175 → IOS-META-014
+            },
+        ],
+        age_rating_completed: Some(false), // IOS-META-015
     };
 
     let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
@@ -118,6 +142,13 @@ fn flags_all_metadata_issues_in_a_broken_snapshot() {
         "IOS-META-006",
         "IOS-META-007",
         "IOS-META-008",
+        "IOS-META-009",
+        "IOS-META-010",
+        "IOS-META-011",
+        "IOS-META-012",
+        "IOS-META-013",
+        "IOS-META-014",
+        "IOS-META-015",
     ] {
         assert!(ids.contains(&expected.to_string()), "missing {expected}");
     }
@@ -139,13 +170,59 @@ fn clean_snapshot_produces_no_findings() {
         screenshot_display_types: vec!["APP_IPHONE_67".into()],
         review_detail: Some(ReviewDetail {
             demo_account_required: false,
+            contact_first_name: Some("Ada".into()),
+            contact_last_name: Some("Lovelace".into()),
+            contact_email: Some("ada@example.com".into()),
+            contact_phone: Some("+1 555 0100".into()),
             ..Default::default()
         }),
         availability_configured: Some(true),
         manual_prices_present: Some(true),
+        review_detail_present: Some(true),
+        project_build_number: Some(8),
+        max_uploaded_build_number: Some(7), // 8 > 7 — next number is free
+        failed_build_upload: None,
+        subscriptions: vec![SubscriptionInfo {
+            name: "Premium".into(),
+            state: Some("READY_TO_SUBMIT".into()),
+            price_count: Some(175),
+            intro_offer_count: Some(175),
+        }],
+        age_rating_completed: Some(true),
     };
 
     assert!(run_checks(&snap).is_empty());
+}
+
+/// `review_detail_present == Some(false)` (definitively no review detail
+/// resource) must fire IOS-META-009 even though `review_detail` is None.
+#[test]
+fn absent_review_detail_fires_contact_check() {
+    let snap = MetadataSnapshot {
+        bundle_id: "com.example.myapp".into(),
+        review_detail_present: Some(false),
+        ..Default::default()
+    };
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert!(ids.contains(&"IOS-META-009".to_string()));
+}
+
+/// A subscription with no intro offers at all is fine (no trial is a valid
+/// product decision) — IOS-META-014 only fires on PARTIAL coverage.
+#[test]
+fn zero_intro_offers_is_not_flagged() {
+    let snap = MetadataSnapshot {
+        bundle_id: "com.example.myapp".into(),
+        subscriptions: vec![SubscriptionInfo {
+            name: "Premium".into(),
+            state: Some("READY_TO_SUBMIT".into()),
+            price_count: Some(175),
+            intro_offer_count: Some(0),
+        }],
+        ..Default::default()
+    };
+    let ids: Vec<String> = run_checks(&snap).into_iter().map(|f| f.check_id).collect();
+    assert!(!ids.contains(&"IOS-META-014".to_string()));
 }
 
 /// `None` means "could not determine" for availability/pricing — the submit

@@ -12,7 +12,7 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B | Kural | Durum |
 |---|-------|-------|
 | B1 | Purpose string ↔ SDK/API eşlemesi | **yazıldı — IOS-BIN-008** (binary sembol taraması; ITMS-90683) |
-| B3 | Reddedilen build numarası yakılır → otomatik +n | açık (ASC build listesiyle karşılaştırma ister — ASC katmanına) |
+| B3 | Reddedilen build numarası yakılır → otomatik +n | **yazıldı — IOS-META-011** (2026-07-21; builds + buildUploads max'ı ↔ CFBundleVersion; Flutter'ın `$(FLUTTER_BUILD_NUMBER)` değişkeninde sessiz kalır) |
 | B4 | Deployment target ↔ SDK gereksinimi | **kısmen yazıldı — IOS-CONFIG-011** (pbxproj tutarlılık; SDK-gereksinim eşlemesi açık) |
 | B5 | Release binary'de ENV assert'i (dart-define prod doğrulaması) | açık (Flutter'a özgü; Generated.xcconfig DART_DEFINES base64 decode) |
 | B6 | Cihaz ailesi ↔ ekran görüntüsü seti | **yazıldı — IOS-BIN-009** (UIDeviceFamily; ASC screenshot çapraz kontrolü ASC katmanına) |
@@ -30,16 +30,16 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 
 | B | Kural | Durum |
 |---|-------|-------|
-| B2 | buildUploads'tan işleme reddi izleme | açık |
-| B19 | Abonelik metadata tam seti (locale ad+açıklama 45kr + screenshot + fiyat) | açık |
-| B20 | Fiyat: baz ülke yetmez — manualPrices + equalizations kontrolü | açık |
-| B21 | Intro offer ülke başına | açık |
-| B22 | Age rating appInfos alanları | açık |
+| B2 | buildUploads'tan işleme reddi izleme | **yazıldı — IOS-META-010** (2026-07-21; en son upload'ın `state.errors[]`'u; canlı doğrulama sıradaki build'de) |
+| B19 | Abonelik metadata tam seti (locale ad+açıklama 45kr + screenshot + fiyat) | **yazıldı — IOS-META-012** (2026-07-21; ASC'nin kendi `MISSING_METADATA` durumu üzerinden — tek tek saymak yerine ASC'nin hükmü) |
+| B20 | Fiyat: baz ülke yetmez — equalizations kontrolü | **yazıldı — IOS-META-013** (2026-07-21; tek territory fiyatı = uyarı) |
+| B21 | Intro offer ülke başına | **yazıldı — IOS-META-014** (2026-07-21; kısmi kapsam uyarısı; 0 offer = trial yok, sessiz) |
+| B22 | Age rating appInfos alanları | **yazıldı — IOS-META-015** (2026-07-21; tüm alanlar null = hiç doldurulmamış) |
 | B23 | App Privacy API'de yok | **manuel** (tek doğrulayıcı submit'in kendisi) |
-| B24 | appStoreReviewDetail zorunlu (ad+telefon+e-posta) | açık (mevcut ReviewDetail modeline yakın — kolay) |
+| B24 | appStoreReviewDetail zorunlu (ad+telefon+e-posta) | **yazıldı — IOS-META-009** (2026-07-21; kaynak yoksa VEYA ad/telefon/e-posta boşsa) |
 | B25 | Demo hesap + içerik tohumu | manuel (IOS-META-003 varlığını kontrol ediyor; tohum manuel) |
 | B26 | TestFlight internal betaGroup + tester akışı | manuel/prosedür |
-| B27 | Build listesi sorgusu filter[app] ile | (implementasyon notu — B2 yazılırken uygulanır) |
+| B27 | Build listesi sorgusu filter[app] ile | **uygulandı** (IOS-META-010/011 fetch'i `/v1/builds?filter[app]` kullanır — relationship path sort ile 400 verdiğinden) |
 | B28 | deliver metadata/screenshot lane ayrımı | prosedür (playbook-05 §16.3) |
 | B35 | appAvailabilityV2 set edilmiş mi | **yazıldı — IOS-META-007** (2026-07-21; 404/boş data = hiç kurulmamış) |
 | B36 | appPriceSchedule manualPrices dolu mu | **yazıldı — IOS-META-008** (2026-07-21; schedule 200 yanıltır, manualPrices satırı şart) |

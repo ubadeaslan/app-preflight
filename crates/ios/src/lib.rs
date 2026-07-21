@@ -65,10 +65,22 @@ pub fn analyze_metadata(root: &Path, _config: &Config) -> MetadataScan {
     let Some(bundle_id) = bundle_id else {
         return MetadataScan::NoTarget;
     };
-    match metadata::analyze(&creds, &bundle_id) {
+    match metadata::analyze(&creds, &bundle_id, detect_build_number(root)) {
         Ok(findings) => MetadataScan::Done(findings),
         Err(e) => MetadataScan::Failed(e.to_string()),
     }
+}
+
+/// The project's `CFBundleVersion` when it is a concrete plain number —
+/// build-setting variables (`$(FLUTTER_BUILD_NUMBER)`) and dotted values
+/// return `None`, which keeps the burned-build-number check silent.
+fn detect_build_number(root: &Path) -> Option<u64> {
+    let project = IosProject::load(root)?;
+    project
+        .info_string("CFBundleVersion")?
+        .trim()
+        .parse::<u64>()
+        .ok()
 }
 
 /// Outcome of `preflight submit-sim` at the CLI boundary.
