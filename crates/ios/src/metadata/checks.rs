@@ -356,7 +356,9 @@ const MANUAL_PRICES_META: CheckMeta = CheckMeta {
     default_severity: Severity::Error,
     confidence: Confidence::High,
     guideline: None,
-    docs_url: Some("https://developer.apple.com/documentation/appstoreconnectapi/app-price-schedules"),
+    docs_url: Some(
+        "https://developer.apple.com/documentation/appstoreconnectapi/app-price-schedules",
+    ),
 };
 
 impl MetadataCheck for ManualPricesPresent {

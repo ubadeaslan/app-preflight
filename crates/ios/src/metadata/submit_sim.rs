@@ -268,9 +268,7 @@ mod tests {
         assert!(blockers
             .iter()
             .any(|b| b.contains("APP_PRICING_REQUIRED") && b.contains("/v2/appPrices/")));
-        assert!(blockers
-            .iter()
-            .any(|b| b.contains("AVAILABILITY_REQUIRED")));
+        assert!(blockers.iter().any(|b| b.contains("AVAILABILITY_REQUIRED")));
     }
 
     #[test]
