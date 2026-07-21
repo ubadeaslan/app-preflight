@@ -14,15 +14,15 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B1 | Purpose string ↔ SDK/API eşlemesi | **yazıldı — IOS-BIN-008** (binary sembol taraması; ITMS-90683) |
 | B3 | Reddedilen build numarası yakılır → otomatik +n | **yazıldı — IOS-META-011** (2026-07-21; builds + buildUploads max'ı ↔ CFBundleVersion; Flutter'ın `$(FLUTTER_BUILD_NUMBER)` değişkeninde sessiz kalır) |
 | B4 | Deployment target ↔ SDK gereksinimi | **kısmen yazıldı — IOS-CONFIG-011** (pbxproj tutarlılık; SDK-gereksinim eşlemesi açık) |
-| B5 | Release binary'de ENV assert'i (dart-define prod doğrulaması) | açık (Flutter'a özgü; Generated.xcconfig DART_DEFINES base64 decode) |
+| B5 | Release binary'de ENV assert'i (dart-define prod doğrulaması) | **yazıldı — IOS-CONFIG-014** (2026-07-21; Generated.xcconfig DART_DEFINES base64 decode, ENV/APP_ENV/ENVIRONMENT ≠ prod → uyarı; dosya gitignore'lu olduğundan tam arşiv makinesinde ateşler. `kReleaseMode` assert yarısı kod tarafı — starter main şablonunda) |
 | B6 | Cihaz ailesi ↔ ekran görüntüsü seti | **yazıldı — IOS-BIN-009** (UIDeviceFamily; ASC screenshot çapraz kontrolü ASC katmanına) |
-| B7 | Yön kilidi (landscape test edilmediyse portrait-only) | açık (Info.plist UISupportedInterfaceOrientations — info seviyesi) |
+| B7 | Yön kilidi (landscape test edilmediyse portrait-only) | **yazıldı — IOS-CONFIG-013** (2026-07-21; portrait+landscape birlikte = info; salt-landscape bilinçli sayılır, sessiz) |
 | B8 | Görünür sürüm etiketi == mağaza sürümü | manuel (kaynak kodda hardcode sürüm avı güvenilir değil) |
 | B9 | İstemci timeout > sunucu timeout | manuel (iki ayrı repo/dil; kod incelemesi işi) |
 | B10 | Subtitle keyword listesi olmasın (2.3.7) | **yazıldı — IOS-STORE-002** |
 | B11 | Metadata'da olmayan özellik vaadi (2.3.1) | manuel (anlam analizi ister) |
 | B12 | Alakasız/yasaklı kategori kelimesi | açık (yapılandırılabilir kelime listesi — düşük öncelik) |
-| B13 | Sayısal iddialar gerçekle eşleşsin ("N dil" ↔ ARB sayısı) | açık (Flutter'a özgü) |
+| B13 | Sayısal iddialar gerçekle eşleşsin ("N dil" ↔ ARB sayısı) | **yazıldı — IOS-STORE-003** (2026-07-21; 19 dilde "N language" kelime eşleme + benzersiz ARB dil sayımı, bölgesel varyantlar tekilleştirilir. İlk canlı koşuda gerçek bulgu: Nokturn metadata "16 dil" ↔ 30 ARB dili) |
 | B14 | Karakter limitleri (subtitle 30 / keywords 100 / promo 170) | **yazıldı — IOS-STORE-001** (fastlane dosyaları; ASC tarafı IOS-META-006) |
 | — | "iPhone Developer" CODE_SIGN_IDENTITY pini (imza savaşı A1.6) | **yazıldı — IOS-CONFIG-012** |
 

@@ -121,6 +121,9 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-META-013`    | iOS | Subscription priced in only the base territory (equalizations missing) |
 | `IOS-META-014`    | iOS | Intro offers cover fewer territories than prices |
 | `IOS-META-015`    | iOS | Age rating declaration never filled in (lives under `appInfos`) |
+| `IOS-CONFIG-013`  | iOS | Landscape declared but likely untested (reviewer rotates the phone) |
+| `IOS-CONFIG-014`  | iOS | Flutter `--dart-define` env in Generated.xcconfig is not production |
+| `IOS-STORE-003`   | iOS | "Supports N languages" claim doesn't match the ARB language count |
 | `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |

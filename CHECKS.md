@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 71 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 74 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (43)
+## iOS (46)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -27,6 +27,8 @@ app-preflight ships 71 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-010` | warning | configuration |  | iCloud container set to the Development environment |
 | `IOS-CONFIG-011` | warning | configuration |  | Inconsistent IPHONEOS_DEPLOYMENT_TARGET values |
 | `IOS-CONFIG-012` | warning | configuration |  | CODE_SIGN_IDENTITY pinned to "iPhone Developer" |
+| `IOS-CONFIG-013` | info | configuration |  | Landscape orientations declared (reviewer will rotate) |
+| `IOS-CONFIG-014` | warning | configuration |  | Flutter dart-define environment is not production |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-META-001` | error | metadata | 5.1.1 | Missing privacy policy URL |
@@ -49,6 +51,7 @@ app-preflight ships 71 checks. Regenerate this file with `preflight rules --form
 | `IOS-PRIVACY-004` | error | privacy | 5.1.1 | Background location without an Always usage description |
 | `IOS-STORE-001` | error | metadata |  | Store metadata text over its character limit |
 | `IOS-STORE-002` | warning | metadata | 2.3.7 | Subtitle reads as a keyword list |
+| `IOS-STORE-003` | warning | metadata | 2.3.1 | Language-count claim doesn't match ARB count |
 
 ## Android (28)
 
