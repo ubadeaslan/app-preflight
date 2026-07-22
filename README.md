@@ -130,6 +130,7 @@ preflight check . --baseline .preflight-baseline.json    # suppress those, fail 
 | `IOS-CONFIG-015`  | iOS | Flutter l10n: locale missing keys from the template ARB |
 | `IOS-CONFIG-016`  | iOS | Flutter l10n: placeholder mismatch between template and translation |
 | `ANDROID-CONFIG-010` | Android | Release shrinking without R8 keep rules — startup crash (Room/WorkManager reflection) |
+| `IOS-CONFIG-017`  | iOS | Firebase project ships without a crash reporter |
 | `IOS-BIN-001`     | iOS | Compiled binary references the banned `UIWebView` |
 | `IOS-BIN-002`     | iOS | Binary links a private framework (2.5.1) |
 | `IOS-BIN-003`     | iOS | Debug / local endpoints embedded in the binary |

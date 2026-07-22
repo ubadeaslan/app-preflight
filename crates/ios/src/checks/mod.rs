@@ -20,6 +20,7 @@ mod pbxproj;
 mod privacy_manifest;
 mod sign_in_with_apple;
 mod store_text;
+mod telemetry;
 mod url_schemes;
 mod usage_descriptions;
 mod versioning;
@@ -53,5 +54,6 @@ pub fn registry() -> Vec<Box<dyn IosCheck>> {
         Box::new(password_reset::PasswordResetCheck),
         Box::new(l10n_arb::ArbMissingKeysCheck),
         Box::new(l10n_arb::ArbPlaceholderCheck),
+        Box::new(telemetry::CrashReportingCheck),
     ]
 }

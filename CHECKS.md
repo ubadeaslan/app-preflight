@@ -1,8 +1,8 @@
 # Checks
 
-app-preflight ships 80 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 81 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
-## iOS (51)
+## iOS (52)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -31,6 +31,7 @@ app-preflight ships 80 checks. Regenerate this file with `preflight rules --form
 | `IOS-CONFIG-014` | warning | configuration |  | Flutter dart-define environment is not production |
 | `IOS-CONFIG-015` | warning | configuration |  | Flutter l10n: locale missing keys from the template ARB |
 | `IOS-CONFIG-016` | warning | configuration |  | Flutter l10n: placeholder mismatch in translation |
+| `IOS-CONFIG-017` | info | configuration |  | Firebase project without crash reporting |
 | `IOS-LEGAL-001` | info | legal | 5.1.1(v) | Account creation without visible deletion path |
 | `IOS-LEGAL-002` | info | legal | 4.8 | Third-party login without Sign in with Apple |
 | `IOS-LEGAL-003` | warning | legal | 2.1 | Email sign-in without a password reset path |
