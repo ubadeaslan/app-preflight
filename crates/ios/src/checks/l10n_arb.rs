@@ -139,6 +139,12 @@ fn parse_arb(path: &Path) -> Option<Arb> {
 
 /// Placeholder names in an ICU message: `{name}` and `{name, plural, ...}`
 /// both yield `name`.
+///
+/// ICU sub-messages are NOT scanned. In `{count, plural, two{بطاقتان} other{…}}`
+/// the branch bodies are text, not arguments — and a single-word body in a
+/// language without spaces (Arabic, CJK) is indistinguishable from a
+/// placeholder unless the nested block is skipped whole. (Caught dogfooding
+/// Snapaw's 34 locales, 2026-07-22.)
 pub(crate) fn placeholders(message: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
     let chars: Vec<char> = message.chars().collect();
@@ -148,16 +154,50 @@ pub(crate) fn placeholders(message: &str) -> BTreeSet<String> {
             i += 1;
             continue;
         }
+        let open = i;
         i += 1;
         let start = i;
         while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '_') {
             i += 1;
         }
-        if i > start && i < chars.len() && (chars[i] == '}' || chars[i] == ',') {
-            out.insert(chars[start..i].iter().collect());
+        if i <= start || i >= chars.len() {
+            continue;
+        }
+        match chars[i] {
+            // Plain `{name}` — a simple placeholder.
+            '}' => {
+                out.insert(chars[start..i].iter().collect());
+            }
+            // `{name, plural|select, ...}` — record the argument, then jump past
+            // the whole block so its branch bodies are never scanned.
+            ',' => {
+                out.insert(chars[start..i].iter().collect());
+                i = skip_balanced(&chars, open);
+            }
+            _ => {}
         }
     }
     out
+}
+
+/// Index just past the `}` matching the `{` at `open`.
+fn skip_balanced(chars: &[char], open: usize) -> usize {
+    let mut depth = 0usize;
+    let mut i = open;
+    while i < chars.len() {
+        match chars[i] {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return i + 1;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    chars.len()
 }
 
 impl IosCheck for ArbMissingKeysCheck {
@@ -285,5 +325,24 @@ mod tests {
     #[test]
     fn mismatch_is_detectable_via_set_compare() {
         assert_ne!(placeholders("Hello {name}"), placeholders("Hello {nom}"));
+    }
+
+    /// Branch bodies of a plural are text, not arguments — languages without
+    /// spaces produce single-word bodies that must not read as placeholders.
+    #[test]
+    fn icu_branch_bodies_are_not_placeholders() {
+        let arabic =
+            placeholders("{count, plural, zero{لا بطاقات} one{بطاقة} two{بطاقتان} other{# بطاقة}}");
+        assert_eq!(arabic, placeholders("{count, plural, other{# cards}}"));
+        assert!(arabic.contains("count"));
+        assert_eq!(arabic.len(), 1);
+    }
+
+    /// A second argument after a plural block is still found.
+    #[test]
+    fn arguments_after_a_plural_block_are_found() {
+        let set = placeholders("{count, plural, other{# cards}} on {date}");
+        assert!(set.contains("count") && set.contains("date"));
+        assert_eq!(set.len(), 2);
     }
 }
