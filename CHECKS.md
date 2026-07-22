@@ -1,6 +1,6 @@
 # Checks
 
-app-preflight ships 79 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
+app-preflight ships 80 checks. Regenerate this file with `preflight rules --format markdown > CHECKS.md`.
 
 ## iOS (51)
 
@@ -58,7 +58,7 @@ app-preflight ships 79 checks. Regenerate this file with `preflight rules --form
 | `IOS-STORE-003` | warning | metadata | 2.3.1 | Language-count claim doesn't match ARB count |
 | `IOS-STORE-004` | warning | metadata | 2.3.7 | Banned term found in store metadata |
 
-## Android (28)
+## Android (29)
 
 | ID | Severity | Category | Guideline | Check |
 |----|----------|----------|-----------|-------|
@@ -78,6 +78,7 @@ app-preflight ships 79 checks. Regenerate this file with `preflight rules --form
 | `ANDROID-CONFIG-007` | error | configuration | Play: Upload requirements | Application is marked testOnly |
 | `ANDROID-CONFIG-008` | warning | configuration | Play: User Data | Exported content provider without a permission |
 | `ANDROID-CONFIG-009` | warning | configuration |  | Deprecated android:sharedUserId |
+| `ANDROID-CONFIG-010` | warning | configuration |  | Release build shrinks without R8 keep rules (startup crash risk) |
 | `ANDROID-DEX-001` | warning | binary | Play: Device and Network Abuse | Dynamic code loading (DexClassLoader) |
 | `ANDROID-DEX-002` | warning | binary |  | Hard-coded secret in the compiled code |
 | `ANDROID-DEX-003` | warning | binary | Play: non-SDK interface restrictions | Restricted / non-SDK (hidden) API reference |

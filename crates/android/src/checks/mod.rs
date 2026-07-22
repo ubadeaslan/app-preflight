@@ -9,6 +9,7 @@ mod exported;
 mod exported_provider;
 mod foreground_service;
 mod network_security_config;
+mod r8_keep_rules;
 mod sensitive_permissions;
 mod shared_user_id;
 mod special_permissions;
@@ -29,5 +30,6 @@ pub fn registry() -> Vec<Box<dyn AndroidCheck>> {
         Box::new(exported_provider::ExportedProviderCheck),
         Box::new(backup::BackupRulesCheck),
         Box::new(shared_user_id::SharedUserIdCheck),
+        Box::new(r8_keep_rules::R8KeepRulesCheck),
     ]
 }
