@@ -63,3 +63,12 @@ Durumlar: **yazıldı** (check ID'siyle canlı) · **açık** (yapılacak) ·
 | B29 | Privacy label ↔ gerçek toplama (FCM token vb.) | manuel (denetim-gizlilik skill'i kapsıyor) |
 | B30 | deleteAccount hata yutmasın | manuel (code review konusu) |
 | B31 | Email girişi varsa şifre sıfırlama yolu | **yazıldı — IOS-LEGAL-003** (2026-07-21; lib/**.dart'ta signInWithEmailAndPassword var + sendPasswordResetEmail yok → uyarı) |
+
+## RED 2026-07-24 adayları (Nokturn ilk gerçek Apple reddi — kaynak: app-factory `apps/nokturn/denetimler/red-2026-07-24.md`)
+
+| B | Kural | Durum |
+|---|-------|-------|
+| B38 | Abonelikli app → App Store description/EULA alanında işlevsel Terms of Use linki VAR mı (3.1.2c — fastlane description taraması + ASC alanı) | açık (kolay, yüksek değer) |
+| B39 | App premium/paywall içeriyor + IAP ürünleri İLK sürüm submission'ına iliştirilmemiş → hata (2.1b; ASC reviewSubmission items ↔ inAppPurchases ilişkisi; "onay sonrası ayrı gönderilir" varsayımı redle yanlışlandı) | açık |
+| B40 | Screenshot bindirme pazarlama metinlerinde fiyat/"free" kelime lint'i (2.3.7 — "free/ücretsiz/gratis/kostenlos/gratuit..." çok-dil listesi; shots.config metinleri statik taranabilir) | açık |
+| B41 | Screenshot cihaz çerçevesi iOS status bar kuralı (2.3.10) | prosedür/şablon (scripts/screenshots şablon düzeltmesi; check değil) |
