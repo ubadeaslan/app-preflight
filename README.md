@@ -11,6 +11,10 @@ target SDKs, placeholder bundle identifiers, and more.
 It's built to live in your terminal and your CI, so a rejection reason shows up
 in a pull request instead of three days into App Review.
 
+> **Scope note:** IAP/RevenueCat configuration integrity (products ↔ entitlements ↔
+> offerings, paywall compliance) is **out of scope** — a clean preflight run does NOT
+> mean purchases were audited. Run a dedicated IAP audit separately.
+
 **Website:** https://ubadeaslan.github.io/app-preflight/
 
 ```
