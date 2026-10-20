@@ -388,7 +388,12 @@ fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     let mut abis = BTreeSet::new();
     let mut dex_names = Vec::new();
     let mut native_libs_64 = Vec::new();
-    for name in archive.file_names() {
+    // zip 9: file_names() yields Result<Cow<str>> — an undecodable name is skipped, not fatal.
+    let names: Vec<String> = archive
+        .file_names()
+        .filter_map(|n| n.ok().map(|c| c.into_owned()))
+        .collect();
+    for name in &names {
         // Entries look like `lib/arm64-v8a/libfoo.so`.
         if let Some(rest) = name.strip_prefix("lib/") {
             if let Some((abi, _)) = rest.split_once('/') {
@@ -472,7 +477,11 @@ fn extract_bundle(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     let mut dex_names = Vec::new();
     let mut native_libs_64 = Vec::new();
     let mut manifest_names = Vec::new();
-    for name in archive.file_names() {
+    let names: Vec<String> = archive
+        .file_names()
+        .filter_map(|n| n.ok().map(|c| c.into_owned()))
+        .collect();
+    for name in &names {
         if let Some(rest) = name.split_once("/lib/").map(|(_, r)| r) {
             if let Some((abi, _)) = rest.split_once('/') {
                 if !abi.is_empty() {

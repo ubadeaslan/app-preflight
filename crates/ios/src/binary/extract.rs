@@ -46,7 +46,11 @@ pub fn extract(path: &Path) -> Result<BinarySnapshot, BinaryError> {
     let file = std::fs::File::open(path).map_err(BinaryError::Io)?;
     let mut archive = ZipArchive::new(file).map_err(|e| BinaryError::Zip(e.to_string()))?;
 
-    let names: Vec<String> = archive.file_names().map(str::to_string).collect();
+    // zip 9: file_names() yields Result<Cow<str>> — an undecodable name is skipped, not fatal.
+    let names: Vec<String> = archive
+        .file_names()
+        .filter_map(|n| n.ok().map(|c| c.into_owned()))
+        .collect();
     let app_dir = names
         .iter()
         .find_map(|n| app_dir_of(n))
